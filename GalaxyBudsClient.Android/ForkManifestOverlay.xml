@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork-specific manifest overlay (see Directory.Build.targets): the app must work fully offline. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+	<uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+</manifest>

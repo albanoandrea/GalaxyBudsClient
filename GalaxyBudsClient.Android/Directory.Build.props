@@ -1,0 +1,12 @@
+<Project>
+  <!--
+    Fork-specific Android settings (new file, never conflicts with upstream).
+    Imported automatically by MSBuild before GalaxyBudsClient.Android.csproj.
+
+    NoDemo=true selects the "full" icons/branding in the upstream csproj.
+    The remaining overrides live in Directory.Build.targets (imported after the csproj).
+  -->
+  <PropertyGroup>
+    <NoDemo>true</NoDemo>
+  </PropertyGroup>
+</Project>
