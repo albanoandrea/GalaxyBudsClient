@@ -91,7 +91,7 @@ public class ExperimentClient
             return;
         }
             
-        if (Settings.Data.ExperimentsDisabled)
+        if (!ForkConfig.OnlineServicesEnabled || Settings.Data.ExperimentsDisabled)
         {
             Log.Information("ExperimentClient: Feature is disabled");
             return;

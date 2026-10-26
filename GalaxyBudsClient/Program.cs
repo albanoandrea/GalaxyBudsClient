@@ -79,7 +79,7 @@ public static class Program
             config = config.MinimumLevel.Warning();
         }
         
-        if (!Settings.Data.DisableCrashReporting)
+        if (ForkConfig.OnlineServicesEnabled && !Settings.Data.DisableCrashReporting)
         {
             CrashReports.SetupCrashHandler();
             config = config.WriteTo.Sentry(o =>
