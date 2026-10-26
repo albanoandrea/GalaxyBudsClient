@@ -24,6 +24,10 @@ To sync: `git remote add upstream https://github.com/timschneeb/GalaxyBudsClient
   - The "Crowdsourcing" section (experiments + crash report toggles) is hidden in `SettingsPage.axaml` with a literal `IsVisible="False"` (Avalonia only allows `xmlns` on the root element, so it can't bind to `ForkConfig` without touching the file header).
   - Firmware download server (`fw.timschneeberger.me`, `FirmwareRemoteClient`): only reachable from the disabled firmware page.
   - Never introduce new HTTP clients, telemetry, or update checks. Opening external links in the browser on explicit user action (e.g. `DesktopServices.OpenUri`) is fine.
+- **Android build is the full version under our own package id.** Overrides live only in new files in `GalaxyBudsClient.Android/` (the upstream csproj and `Properties/AndroidManifest.xml` are untouched):
+  - `Directory.Build.props` sets `NoDemo=true` (full icons/branding).
+  - `Directory.Build.targets` sets `ApplicationId=com.andrea.galaxybudsclient` and strips the `RequestFullVersion` define, so the "Open on Google Play" upsell in `Dialogs.RequireFullVersion()` is never compiled in.
+  - `ForkManifestOverlay.xml` (an `AndroidManifestOverlay`) removes `android.permission.INTERNET` from the merged manifest. Verify in `obj/Debug/net10.0-android36.1/android/AndroidManifest.xml` after upstream merges.
 
 ## Build & test
 
@@ -37,7 +41,16 @@ powershell -ExecutionPolicy Bypass -File setup\setup-windows.ps1 -WithInstaller
 
 # -Mode build | test | publish | installer   (publish → bin\win-x64, installer → GalaxyBudsClient_Setup_*.exe in repo root)
 powershell -ExecutionPolicy Bypass -File setup\build-windows.ps1 -Mode publish -Runtime win-x64
+
+# Android: -WithAndroid installs the android workload, SDK platform (into $env:ANDROID_HOME) and a private JDK
+# in %LOCALAPPDATA%\Android\jdk (.NET for Android rejects JDK 25). android → bin\android\*-Signed.apk,
+# android-install also runs `adb install -r`. -AndroidRuntime android-arm64 builds one ABI (~67 MB vs ~270 MB for all four);
+# it maps to -p:ForkAndroidRuntime, because `-r` / a global RuntimeIdentifiers don't work here.
+powershell -ExecutionPolicy Bypass -File setup\setup-windows.ps1 -WithAndroid
+powershell -ExecutionPolicy Bypass -File setup\build-windows.ps1 -Mode android-install -AndroidRuntime android-arm64
 ```
+
+The Android build mirrors upstream `GalaxyBudsClient.Android/build.sh`: `-c Debug` with `EmbedAssembliesIntoApk=true`/`NotDebuggable=true`, and `-p:IsAndroid=true` passed globally (it doesn't propagate to project references). It's signed with the local .NET debug keystore, so only builds from the same machine install over each other.
 
 Raw commands:
 

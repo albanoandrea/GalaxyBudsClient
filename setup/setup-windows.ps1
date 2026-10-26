@@ -6,10 +6,16 @@
     - Installs the .NET SDK feature band pinned in global.json (per-user, no admin required)
       into %LOCALAPPDATA%\Microsoft\dotnet and adds it to the user PATH.
     - Optionally installs NSIS (needed only to build the setup installer from install.nsi).
+    - Optionally installs the Android toolchain (.NET android workload, Android SDK platform,
+      and a per-user JDK in %LOCALAPPDATA%\Android\jdk).
     - Restores NuGet packages for the solution.
 
 .PARAMETER WithInstaller
     Also install NSIS via winget, to build the .exe installer.
+
+.PARAMETER WithAndroid
+    Also install everything needed to build the Android APK (setup\build-windows.ps1 -Mode android).
+    Uses $env:ANDROID_HOME as Android SDK, or %LOCALAPPDATA%\Android\Sdk if unset.
 
 .PARAMETER SkipRestore
     Do not run 'dotnet restore' at the end.
@@ -17,10 +23,12 @@
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File setup\setup-windows.ps1
     powershell -ExecutionPolicy Bypass -File setup\setup-windows.ps1 -WithInstaller
+    powershell -ExecutionPolicy Bypass -File setup\setup-windows.ps1 -WithAndroid
 #>
 [CmdletBinding()]
 param(
     [switch]$WithInstaller,
+    [switch]$WithAndroid,
     [switch]$SkipRestore
 )
 
@@ -92,6 +100,29 @@ if ($WithInstaller) {
         }
         if (Test-Path $nsisDir) { Add-ToUserPath $nsisDir }
     }
+}
+
+# --- Android toolchain (optional) --------------------------------------------
+if ($WithAndroid) {
+    $androidProject = Join-Path $RepoRoot 'GalaxyBudsClient.Android\GalaxyBudsClient.Android.csproj'
+    $androidSdk = $(if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA 'Android\Sdk' })
+    # .NET for Android rejects too-new JDKs, so use a private one; its tooling picks the supported version
+    $javaSdk = Join-Path $env:LOCALAPPDATA 'Android\jdk'
+
+    Write-Step "Installing .NET android workload"
+    & dotnet workload install android
+    if ($LASTEXITCODE -ne 0) { throw "dotnet workload install android failed" }
+
+    Write-Step "Restoring Android NuGet packages"
+    & dotnet restore --configfile (Join-Path $RepoRoot 'GalaxyBudsClient\nuget.config') -p:IsAndroid=true $androidProject
+    if ($LASTEXITCODE -ne 0) { throw "dotnet restore (android) failed" }
+
+    Write-Step "Installing Android SDK platform into $androidSdk and JDK into $javaSdk"
+    & dotnet build $androidProject -t:InstallAndroidDependencies -f net10.0-android36.1 -p:IsAndroid=true `
+        "-p:AndroidSdkDirectory=$androidSdk" "-p:JavaSdkDirectory=$javaSdk" -p:AcceptAndroidSDKLicenses=true
+    if ($LASTEXITCODE -ne 0) { throw "InstallAndroidDependencies failed" }
+    # Release the JDK folder held by MSBuild worker nodes
+    & dotnet build-server shutdown | Out-Null
 }
 
 # --- Restore -----------------------------------------------------------------

@@ -10,6 +10,10 @@
     <!-- Full version without the "Open on Google Play" upsell: upstream's NoDemo build defines
          RequestFullVersion, which compiles that dialog into Dialogs.RequireFullVersion(). Strip it. -->
     <DefineConstants>$(DefineConstants.Replace(';RequestFullVersion', ''))</DefineConstants>
+
+    <!-- Optional single-ABI build (-p:ForkAndroidRuntime=android-arm64). Setting RuntimeIdentifiers globally
+         would also leak into the referenced projects and break the source generators. -->
+    <RuntimeIdentifiers Condition="'$(ForkAndroidRuntime)' != ''">$(ForkAndroidRuntime)</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
