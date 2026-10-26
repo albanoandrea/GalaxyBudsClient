@@ -28,6 +28,7 @@ To sync: `git remote add upstream https://github.com/timschneeb/GalaxyBudsClient
   - `Directory.Build.props` sets `NoDemo=true` (full icons/branding).
   - `Directory.Build.targets` sets `ApplicationId=com.andrea.galaxybudsclient` and strips the `RequestFullVersion` define, so the "Open on Google Play" upsell in `Dialogs.RequireFullVersion()` is never compiled in.
   - `ForkManifestOverlay.xml` (an `AndroidManifestOverlay`) removes `android.permission.INTERNET` from the merged manifest. Verify in `obj/Debug/net10.0-android36.1/android/AndroidManifest.xml` after upstream merges.
+  - Background connection service + home-screen widgets live in `GalaxyBudsClient.Android/Fork/` (design and pitfalls in its `README.md`). After upstream merges, re-check that `ForkAndroidBootstrap` still mirrors `MainActivity.CustomizeAppBuilder`; after Avalonia upgrades, re-check the reflection on `AvaloniaMainActivity.Lifetime`/`SingleViewLifetime`.
 
 ## Build & test
 

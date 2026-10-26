@@ -3,4 +3,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
 	<uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+
+	<!-- Background connection service + widgets (see Fork/README.md) -->
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

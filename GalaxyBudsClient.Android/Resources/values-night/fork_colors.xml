@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork-only resources (new file, never conflicts with upstream) -->
+<resources>
+  <color name="fork_widget_background">#F21F1F23</color>
+  <color name="fork_widget_text">#FFE4E1E6</color>
+  <color name="fork_widget_text_secondary">#FFC8C5CA</color>
+  <color name="fork_widget_button">#FF8C9EFF</color>
+  <color name="fork_widget_button_text">#FF0B1A66</color>
+</resources>
