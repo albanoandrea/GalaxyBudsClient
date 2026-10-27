@@ -535,6 +535,8 @@ You might need to manually reconnect your earbuds.</sys:String>
     <sys:String x:Key="nc_one_earbud_description">Noise controls normally require two earbuds to prevent discomfort, enable this to allow it with only one earbud</sys:String>
     <sys:String x:Key="nc_anc_level">High sensitivity</sys:String>
     <sys:String x:Key="nc_anc_level_description">Stronger noise cancelling effect</sys:String>
+    <sys:String x:Key="nc_anc_level_slider">Active noise cancelling level</sys:String>
+    <sys:String x:Key="nc_anc_level_value">Level {0}</sys:String>
     <sys:String x:Key="nc_ambient">Customize ambient sound</sys:String>
     <sys:String x:Key="nc_ambient_description">Configure ambient sound tone and volume (if available)</sys:String>
     <sys:String x:Key="nc_voicedetect">Conversation detection</sys:String>

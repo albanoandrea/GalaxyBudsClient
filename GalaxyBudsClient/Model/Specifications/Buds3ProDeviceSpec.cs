@@ -29,6 +29,7 @@ public class Buds3ProDeviceSpec : IDeviceSpec
         { Features.AmbientExtraLoud, null },
         { Features.AmbientSound, null },
         { Features.Anc, null },
+        { Features.AncNoiseReductionLevelSlider, null },
         { Features.AmbientSidetone, null },
         { Features.AmbientCustomize, null },
         { Features.NoiseControlsWithOneEarbud, null },

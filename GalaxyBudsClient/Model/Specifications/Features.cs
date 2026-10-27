@@ -52,4 +52,5 @@ public enum Features
     HotCommandLanguageUpdate,
     HiddenAtMode,
     CustomEqualizer,
+    AncNoiseReductionLevelSlider,
 }

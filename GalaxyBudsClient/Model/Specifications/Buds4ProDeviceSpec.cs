@@ -28,6 +28,7 @@ public class Buds4ProDeviceSpec : IDeviceSpec
         { Features.AmbientSoundVolume, null },
         { Features.CustomEqualizer, null },
         { Features.Anc, null },
+        { Features.AncNoiseReductionLevelSlider, null },
         { Features.AmbientSidetone, null },
         { Features.AmbientCustomize, null },
         { Features.NoiseControlsWithOneEarbud, null },
