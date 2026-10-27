@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork-only resources (new file, never conflicts with upstream) -->
+<resources>
+  <string name="fork_default_device_name">Galaxy Buds</string>
+  <string name="fork_status_connected">Connected</string>
+  <string name="fork_status_connecting">Connecting…</string>
+  <string name="fork_status_disconnected">Disconnected</string>
+  <string name="fork_status_no_device">Set up your earbuds in the app first</string>
+  <string name="fork_battery_left">L %1$d%%</string>
+  <string name="fork_battery_right">R %1$d%%</string>
+  <string name="fork_battery_case">Case %1$d%%</string>
+  <string name="fork_action_connect">Connect</string>
+  <string name="fork_action_disconnect">Disconnect</string>
+  <string name="fork_action_open_app">Open app</string>
+  <string name="fork_notif_channel_name">Earbuds connection</string>
+  <string name="fork_notif_channel_desc">Shown while the app keeps your earbuds connected in the background</string>
+  <string name="fork_widget_controls_label">Buds controls</string>
+  <string name="fork_widget_controls_desc">Connection, battery and noise control for your earbuds</string>
+  <string name="fork_nc_off">Off</string>
+  <string name="fork_nc_ambient">Ambient sound</string>
+  <string name="fork_nc_adaptive">Adaptive</string>
+  <string name="fork_nc_anc">Noise cancelling</string>
+  <string name="fork_battery_l">L</string>
+  <string name="fork_battery_r">R</string>
+  <string name="fork_battery_c">Case</string>
+  <string name="fork_battery_percent">%1$d%%</string>
+  <string name="fork_battery_unknown">--</string>
+  <string name="fork_permission_denied">Bluetooth permission is required to connect to your earbuds.</string>
+</resources>

@@ -225,7 +225,8 @@
             </ui:SettingsExpander>
 
 
-            <ui:SettingsExpander Header="{ext:Translate {x:Static i18N:Keys.SettingsCrowdsourcing}}">
+            <ui:SettingsExpander Header="{ext:Translate {x:Static i18N:Keys.SettingsCrowdsourcing}}"
+                                 IsVisible="False">
                 <ui:SettingsExpander.IconSource>
                     <ic:SymbolIconSource Symbol="Lightbulb" />
                 </ui:SettingsExpander.IconSource>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork: controls widget metadata. One row = compact layout, two rows = full layout (see WidgetRenderer).
+     updatePeriodMillis=0: BudsConnectionService pushes updates. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:description="@string/fork_widget_controls_desc"
+                    android:initialLayout="@layout/fork_widget_controls_compact"
+                    android:previewLayout="@layout/fork_widget_controls_compact"
+                    android:minWidth="250dp"
+                    android:minHeight="40dp"
+                    android:minResizeWidth="250dp"
+                    android:minResizeHeight="40dp"
+                    android:resizeMode="horizontal|vertical"
+                    android:targetCellWidth="4"
+                    android:targetCellHeight="1"
+                    android:updatePeriodMillis="0"
+                    android:widgetCategory="home_screen" />

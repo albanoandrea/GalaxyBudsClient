@@ -1,0 +1,23 @@
+<Project>
+  <!--
+    Fork-specific Android overrides (new file, never conflicts with upstream).
+    Imported automatically by MSBuild after GalaxyBudsClient.Android.csproj, so these win.
+  -->
+  <PropertyGroup>
+    <!-- Own package id, so it installs side by side with the official app -->
+    <ApplicationId>com.andrea.galaxybudsclient</ApplicationId>
+
+    <!-- Full version without the "Open on Google Play" upsell: upstream's NoDemo build defines
+         RequestFullVersion, which compiles that dialog into Dialogs.RequireFullVersion(). Strip it. -->
+    <DefineConstants>$(DefineConstants.Replace(';RequestFullVersion', ''))</DefineConstants>
+
+    <!-- Optional single-ABI build (-p:ForkAndroidRuntime=android-arm64). Setting RuntimeIdentifiers globally
+         would also leak into the referenced projects and break the source generators. -->
+    <RuntimeIdentifiers Condition="'$(ForkAndroidRuntime)' != ''">$(ForkAndroidRuntime)</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Offline app: remove the INTERNET permission from the merged manifest -->
+    <AndroidManifestOverlay Include="ForkManifestOverlay.xml" />
+  </ItemGroup>
+</Project>

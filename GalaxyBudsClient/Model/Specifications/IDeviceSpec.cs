@@ -25,6 +25,9 @@ public interface IDeviceSpec
     
     public bool Supports(Features feature, int? extendedStatusRevision)
     {
+        if (feature == Features.FirmwareUpdates && !ForkConfig.FirmwareUpdatesEnabled)
+            return false;
+
         if (TranslatorToolsView.GrantAllFeaturesForTesting)
             return true;
             

@@ -68,6 +68,19 @@
                         <ext:RequiresFeatureBehavior Feature="AncNoiseReductionLevels" />
                     </Interaction.Behaviors>
                 </controls:SettingsSwitchItem>
+
+                <controls:SettingsSliderItem
+                    Debounce="True"
+                    Content="{ext:Translate {x:Static i18N:Keys.NcAncLevelSlider}}"
+                    Description="{Binding AncLevelDescription}"
+                    Symbol="Gauge"
+                    IsEnabled="{Binding IsAncEnabled}"
+                    Maximum="{Binding MaximumAncLevel}"
+                    Value="{Binding AncLevel}">
+                    <Interaction.Behaviors>
+                        <ext:RequiresFeatureBehavior Feature="AncNoiseReductionLevelSlider" />
+                    </Interaction.Behaviors>
+                </controls:SettingsSliderItem>
             </controls:SettingsGroup>
 
             <controls:SettingsGroup>

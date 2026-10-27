@@ -54,6 +54,7 @@ public partial class NoiseControlPageViewModel : MainPageViewModelBase
             _suppressorCounter--;
         };
         
+        InitAncLevelSlider();
         PropertyChanged += OnPropertyChanged;
     }
     
