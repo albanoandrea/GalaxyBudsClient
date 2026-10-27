@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork: noise control "Adaptive" (person with level bars). Tinted by the widget. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="24dp"
+        android:height="24dp"
+        android:viewportWidth="24"
+        android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9.5,5.6a2.8,2.8 0,1 1,0 5.6a2.8,2.8 0,1 1,0 -5.6z M4.3,19c0,-3 2.3,-4.8 5.2,-4.8s5.2,1.8 5.2,4.8z" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:pathData="M17.3,10v5 M19.7,7.5v10 M22.1,11v3" />
+</vector>

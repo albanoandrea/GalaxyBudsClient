@@ -16,12 +16,19 @@ internal static class ForkIntents
     public const string ActionDisconnect = Prefix + "DISCONNECT";
     /// <summary>Keep the service alive for a connection made elsewhere (e.g. the app UI)</summary>
     public const string ActionAttach = Prefix + "ATTACH";
+    /// <summary>Set the noise control mode in <see cref="ExtraNoiseMode"/> (a NoiseControlModes value)</summary>
+    public const string ActionSetNoiseMode = Prefix + "SET_NOISE_MODE";
+    public const string ExtraNoiseMode = "com.andrea.galaxybudsclient.extra.NOISE_MODE";
 
     // PendingIntent request codes (one per button, so they never replace each other)
     public const int RequestWidgetConnect = 1;
     public const int RequestWidgetDisconnect = 2;
     public const int RequestNotificationConnect = 3;
     public const int RequestNotificationDisconnect = 4;
+    public const int RequestWidgetModeOff = 10;
+    public const int RequestWidgetModeAmbient = 11;
+    public const int RequestWidgetModeAdaptive = 12;
+    public const int RequestWidgetModeAnc = 13;
 
     public const string ExtraNextAction = "com.andrea.galaxybudsclient.extra.NEXT_ACTION";
 
@@ -65,7 +72,7 @@ internal static class ForkIntents
     /// PendingIntent for a widget/notification button. Goes straight to the service when the permissions are in place
     /// (widget clicks are allowed to start foreground services from the background), otherwise to the permission screen first.
     /// </summary>
-    public static PendingIntent ActionPendingIntent(Context context, string action, int requestCode)
+    public static PendingIntent ActionPendingIntent(Context context, string action, int requestCode, int? noiseMode = null)
     {
         const PendingIntentFlags flags = PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable;
 
@@ -78,6 +85,8 @@ internal static class ForkIntents
         }
 
         var serviceIntent = ServiceIntent(context, action);
+        if (noiseMode != null)
+            serviceIntent.PutExtra(ExtraNoiseMode, noiseMode.Value);
         return OperatingSystem.IsAndroidVersionAtLeast(26)
             ? PendingIntent.GetForegroundService(context, requestCode, serviceIntent, flags)!
             : PendingIntent.GetService(context, requestCode, serviceIntent, flags)!;

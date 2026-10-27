@@ -3,6 +3,8 @@ using Android.Content;
 using Android.OS;
 using GalaxyBudsClient.Message;
 using GalaxyBudsClient.Message.Decoder;
+using GalaxyBudsClient.Message.Parameter;
+using GalaxyBudsClient.Model.Constants;
 using GalaxyBudsClient.Model.Specifications;
 using GalaxyBudsClient.Platform;
 using Serilog;
@@ -18,7 +20,11 @@ internal sealed record BudsSnapshot(
     string? DeviceName,
     int? BatteryL,
     int? BatteryR,
-    int? BatteryCase)
+    int? BatteryCase,
+    NoiseControlModes? NoiseMode = null,
+    bool HasAmbient = false,
+    bool HasAdaptive = false,
+    bool HasAnc = false)
 {
     public static readonly BudsSnapshot NotRunning = new(false, false, false, false, null, null, null, null);
 }
@@ -37,6 +43,81 @@ internal static class BudsState
     private static BluetoothImpl? _subscribed;
     private static volatile bool _connecting;
     private static Context? _appContext;
+    private static NoiseControlModes? _noiseMode;
+
+    /// <summary>
+    /// Noise control modes of a model (besides Off). Reads the spec rules directly instead of IDeviceSpec.Supports,
+    /// which touches an Avalonia view: this also runs before the core is set up (see Fork/README.md pitfalls).
+    /// </summary>
+    public static (bool Ambient, bool Adaptive, bool Anc) ModeSupportFor(Models model)
+    {
+        var rules = DeviceSpecHelper.FindByModel(model)?.Rules;
+        if (rules == null)
+            return (false, false, false);
+        var noiseControl = rules.ContainsKey(Features.NoiseControl);
+        return (
+            noiseControl || rules.ContainsKey(Features.AmbientSound),
+            // Adaptive (NOISE_CONTROLS = 3) exists on these models, but no upstream spec declares
+            // Features.NoiseControlAdaptive (enabling it there would also change how the ESU touch options are parsed)
+            noiseControl && (rules.ContainsKey(Features.NoiseControlAdaptive) || model is Models.Buds3Pro or Models.Buds4Pro),
+            rules.ContainsKey(Features.Anc));
+    }
+
+    /// <summary>
+    /// Device configured in the app (the last used one), read from settings.json without loading the core's Settings
+    /// (its static constructor must not run before Avalonia is set up). <see cref="Models.NULL"/> if unknown.
+    /// </summary>
+    public static (Models Model, string? Name) ConfiguredDevice()
+    {
+        var path = PlatformUtils.CombineDataPath("settings.json");
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(path),
+                new System.Text.Json.JsonDocumentOptions { AllowTrailingCommas = true });
+            var root = doc.RootElement;
+            var lastMac = Property(root, "lastDeviceMac")?.ToString();
+            if (Property(root, "devices") is not { ValueKind: System.Text.Json.JsonValueKind.Array } devices)
+            {
+                var keys = new System.Collections.Generic.List<string>();
+                foreach (var p in root.EnumerateObject())
+                    keys.Add(p.Name);
+                global::Android.Util.Log.Warn("GbFork", $"BudsState: no devices in {path}; keys: {string.Join(",", keys)}");
+                return (Models.NULL, null);
+            }
+
+            (Models Model, string? Name) result = (Models.NULL, null);
+            foreach (var device in devices.EnumerateArray())
+            {
+                if (Property(device, "model") is not { } value ||
+                    !Enum.TryParse<Models>(value.ToString(), true, out var parsed) || parsed == Models.NULL)
+                    continue;
+                if (result.Model == Models.NULL || Property(device, "macAddress")?.ToString() == lastMac)
+                    result = (parsed, Property(device, "name")?.ToString());
+            }
+            if (result.Model == Models.NULL)
+                global::Android.Util.Log.Warn("GbFork", $"BudsState: no device model in {path}");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            // Serilog is not set up yet when this runs, so log to logcat directly
+            global::Android.Util.Log.Warn("GbFork", $"BudsState: could not read the configured device from {path}: {ex}");
+            return (Models.NULL, null);
+        }
+    }
+
+    // The serializer reads case-insensitively, so match that
+    private static System.Text.Json.JsonElement? Property(System.Text.Json.JsonElement element, string name)
+    {
+        if (element.ValueKind != System.Text.Json.JsonValueKind.Object)
+            return null;
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+                return property.Value;
+        }
+        return null;
+    }
 
     public static BudsSnapshot Current { get; private set; } = BudsSnapshot.NotRunning;
 
@@ -62,6 +143,9 @@ internal static class BudsState
             {
                 DeviceMessageCache.Init();
                 SppMessageReceiver.Instance.BaseUpdate += OnBaseUpdate;
+                SubscribeNoiseControl();
+                if (DeviceMessageCache.Instance.ExtendedStatusUpdate is { } esu)
+                    _noiseMode = NoiseModeFrom(esu);
             }
             else
             {
@@ -178,6 +262,7 @@ internal static class BudsState
                 batteryCase = c;
         }
 
+        var modes = ModeSupportFor(bt.CurrentModel);
         return new BudsSnapshot(
             CoreRunning: true,
             HasValidDevice: BluetoothImpl.HasValidDevice,
@@ -186,7 +271,78 @@ internal static class BudsState
             DeviceName: bt.Device.Current?.Name ?? bt.DeviceName,
             BatteryL: left,
             BatteryR: right,
-            BatteryCase: batteryCase);
+            BatteryCase: batteryCase,
+            NoiseMode: connected ? _noiseMode : null,
+            HasAmbient: modes.Ambient,
+            HasAdaptive: modes.Adaptive,
+            HasAnc: modes.Anc);
+    }
+
+    /// <summary>
+    /// Sets the noise control mode the same way NoiseControlPageViewModel does. The app UI follows
+    /// through the NOISE_CONTROLS acknowledgement. Main thread.
+    /// </summary>
+    public static async void SetNoiseMode(NoiseControlModes mode)
+    {
+        var bt = BluetoothImpl.Instance;
+        if (!bt.IsConnected)
+            return;
+
+        // Optimistic: the widget reacts at once; the ack or the next status update corrects it if needed
+        _noiseMode = mode;
+        Refresh();
+        try
+        {
+            if (bt.DeviceSpec.Supports(Features.NoiseControl))
+            {
+                await bt.SendRequestAsync(MsgIds.NOISE_CONTROLS, (byte)mode);
+            }
+            else
+            {
+                if (bt.DeviceSpec.Supports(Features.AmbientSound))
+                    await bt.SendRequestAsync(MsgIds.SET_AMBIENT_MODE, mode == NoiseControlModes.AmbientSound);
+                if (bt.DeviceSpec.Supports(Features.Anc))
+                    await bt.SendRequestAsync(MsgIds.SET_NOISE_REDUCTION, mode == NoiseControlModes.NoiseReduction);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "BudsState: failed to set noise control mode {Mode}", mode);
+        }
+    }
+
+    private static NoiseControlModes NoiseModeFrom(ExtendedStatusUpdateDecoder e)
+    {
+        if (BluetoothImpl.Instance.DeviceSpec.Supports(Features.NoiseControl))
+            return e.NoiseControlMode;
+        return e.AmbientSoundEnabled ? NoiseControlModes.AmbientSound
+            : e.NoiseCancelling ? NoiseControlModes.NoiseReduction
+            : NoiseControlModes.Off;
+    }
+
+    // Same sources as NoiseControlPageViewModel: status update, buds-side changes (touch, Samsung app) and acks
+    private static void SubscribeNoiseControl()
+    {
+        var receiver = SppMessageReceiver.Instance;
+        receiver.ExtendedStatusUpdate += (_, e) => SetNoiseModeFromBuds(NoiseModeFrom(e));
+        receiver.NoiseControlUpdateResponse += (_, mode) => SetNoiseModeFromBuds(mode);
+        receiver.AncEnabledUpdateResponse += (_, enabled) => SetNoiseModeFromBuds(
+            enabled ? NoiseControlModes.NoiseReduction
+            : _noiseMode == NoiseControlModes.NoiseReduction ? NoiseControlModes.Off : _noiseMode);
+        receiver.AmbientEnabledUpdateResponse += (_, enabled) => SetNoiseModeFromBuds(
+            enabled ? NoiseControlModes.AmbientSound
+            : _noiseMode == NoiseControlModes.AmbientSound ? NoiseControlModes.Off : _noiseMode);
+        receiver.AcknowledgementResponse += (_, ack) =>
+        {
+            if (ack.Id == MsgIds.NOISE_CONTROLS && ack.Parameters is SimpleAckParameter param)
+                SetNoiseModeFromBuds((NoiseControlModes)param.Value);
+        };
+    }
+
+    private static void SetNoiseModeFromBuds(NoiseControlModes? mode)
+    {
+        _noiseMode = mode;
+        Refresh();
     }
 
     private static void OnConnected(object? sender, EventArgs e) => SetConnecting(false);

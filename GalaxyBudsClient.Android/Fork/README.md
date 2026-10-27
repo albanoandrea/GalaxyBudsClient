@@ -44,10 +44,23 @@ the UI also survives closing the app and keeps widgets updated.
 
 1. **Foundation (done)**: bootstrap, `BudsConnectionService` (foreground, notification with Connect/Disconnect),
    `BudsState` snapshot (connection + battery), link-loss detection (ACL / adapter off), connect retries,
-   process hook, permission trampoline, **Connect widget** (status, L / R / case battery, Connect/Disconnect button).
-2. **Noise control widget + QS tile**: Off / Ambient / ANC, gated by `Features.NoiseControl` / `AmbientSound` / `Anc`;
-   legacy models use `SET_AMBIENT_MODE` / `SET_NOISE_REDUCTION`. State from ESU + `NoiseControlUpdateResponse` + acks.
-3. **More toggles** as needed: touchpad lock, EQ preset, ambient volume, find my buds, conversation detect.
+   process hook, permission trampoline, Connect widget (since replaced by the controls widget).
+2. **Controls widget (done)**: one responsive widget (`ControlsWidgetProvider`); only the 2-row layout shows the device name. The layout is
+   picked by size (Android 12+: a size → RemoteViews map, the launcher switches while resizing; older: from the
+   widget options in `OnAppWidgetOptionsChanged`):
+   - **3×1** (`fork_widget_controls_compact`): tiny battery/status line, Bluetooth icon toggle, Off / Ambient / ANC icons.
+   - **4×1**: same, plus Adaptive.
+   - **2 rows** (`fork_widget_controls`): device name + status, Connect/Disconnect pill, L / R / case battery bars,
+     labelled mode circles on a track.
+
+   Modes are gated by `Features.NoiseControl` / `AmbientSound` / `Anc`; legacy models use `SET_AMBIENT_MODE` /
+   `SET_NOISE_REDUCTION`. Adaptive (`NOISE_CONTROLS` = 3) is shown for Buds3 Pro / Buds4 Pro (fork-side check in
+   `BudsState.ModeSupportFor`, because enabling `Features.NoiseControlAdaptive` in the upstream specs would also change
+   ESU touch-option parsing). Before the core runs, the model is read from settings.json (`BudsState.ConfiguredDevice`,
+   spec `Rules` read directly: `IDeviceSpec.Supports` touches an Avalonia view), so the columns are right from the start.
+   State comes from the ESU, `NoiseControlUpdateResponse`, `Anc/AmbientEnabledUpdateResponse` and `NOISE_CONTROLS` acks;
+   the app UI follows widget changes through the same ack. Mode taps go to the service (`ActionSetNoiseMode`).
+3. **Next**: QS tile, then more toggles as needed: touchpad lock, EQ preset, ambient volume, find my buds, conversation detect.
 
 ### Pitfalls found while testing
 
@@ -55,6 +68,10 @@ the UI also survives closing the app and keeps widgets updated.
   giving a white UI and no core events (`Connected`, battery). `ForkAndroidBootstrap` logs the dispatcher it ends up with.
 - The first RFCOMM connect after the buds (re)attach often fails with "read failed"; the core doesn't retry, the service does.
 - Widget buttons send the action shown on their label (never a toggle), so a stale widget can't do the opposite.
+- RemoteViews size maps: the launcher picks the entry with the **largest area** that fits, so every key needs a real
+  width *and* height (a 0 in either makes all areas equal). `Button` gets an elevation shadow; use a `TextView`.
+- Design iteration works well on the `Pixel_8_API_37` emulator (`-AndroidRuntime android-x64`): a temporary exported
+  receiver that injects a fake `BudsSnapshot` over `adb shell am broadcast` lets you style every state without earbuds.
 
 ## Test checklist (phase 1)
 

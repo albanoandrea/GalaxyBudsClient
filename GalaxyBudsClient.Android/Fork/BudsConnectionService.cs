@@ -91,7 +91,7 @@ internal class BudsConnectionService : Service
         RegisterLinkReceiver();
 
         Log.Debug("BudsConnectionService: {Action}", action);
-        HandleAction(action);
+        HandleAction(action, intent);
         return StartCommandResult.NotSticky;
     }
 
@@ -108,7 +108,7 @@ internal class BudsConnectionService : Service
         base.OnDestroy();
     }
 
-    private void HandleAction(string action)
+    private void HandleAction(string action, Intent? intent)
     {
         var state = BudsState.Current;
         if (!state.HasValidDevice)
@@ -131,6 +131,12 @@ internal class BudsConnectionService : Service
                 // On a cold start the App's auto-connect is already running (BudsState shows it as connecting)
                 if (!state.IsConnected && !state.IsConnecting)
                     _ = ConnectAsync();
+                break;
+            case ForkIntents.ActionSetNoiseMode:
+                if (intent?.HasExtra(ForkIntents.ExtraNoiseMode) == true)
+                    BudsState.SetNoiseMode((GalaxyBudsClient.Model.Constants.NoiseControlModes)
+                        intent.GetIntExtra(ForkIntents.ExtraNoiseMode, 0));
+                ScheduleStopIfIdle();
                 break;
             default: // ActionAttach
                 ScheduleStopIfIdle();
