@@ -57,8 +57,8 @@ internal static class BudsState
         var noiseControl = rules.ContainsKey(Features.NoiseControl);
         return (
             noiseControl || rules.ContainsKey(Features.AmbientSound),
-            // Adaptive (NOISE_CONTROLS = 3) exists on these models, but no upstream spec declares
-            // Features.NoiseControlAdaptive (enabling it there would also change how the ESU touch options are parsed)
+            // Adaptive (NOISE_CONTROLS = 3) exists on these models; the fork declares Features.NoiseControlAdaptive
+            // for Buds3 Pro / Buds4 Pro (verified on Buds4 Pro: ESU byte 21 uses the Buds3+ touch-and-hold bit layout)
             noiseControl && (rules.ContainsKey(Features.NoiseControlAdaptive) || model is Models.Buds3Pro or Models.Buds4Pro),
             rules.ContainsKey(Features.Anc));
     }

@@ -84,7 +84,7 @@
                     SelectedValue="{Binding NoiseControlCycleMode}">
                     <Interaction.Behaviors>
                         <ext:LocalizationAwareComboBoxBehavior /> 
-                        <ext:RequiresFeatureBehavior Feature="NoiseControl" />
+                        <ext:RequiresFeatureWithoutBehavior Feature="NoiseControl" Without="NoiseControlAdaptive" />
                     </Interaction.Behaviors>
                 </controls:SettingsComboBoxItem>
                 
@@ -97,9 +97,46 @@
                     SelectedValue="{Binding NoiseControlCycleModeRight}">
                     <Interaction.Behaviors>
                         <ext:LocalizationAwareComboBoxBehavior /> 
-                        <ext:RequiresFeatureBehavior Feature="NoiseControlModeDualSide" />
+                        <ext:RequiresFeatureWithoutBehavior Feature="NoiseControlModeDualSide" Without="NoiseControlAdaptive" />
                     </Interaction.Behaviors>
                 </controls:SettingsComboBoxItem>
+
+                <!-- Fork: per-side mode checklist (TouchpadPageViewModel.NoiseCycle.cs) -->
+                <controls:SettingsSymbolItem
+                    Content="{Binding LeftControlCycleModeLabel}"
+                    Description="{ext:Translate {x:Static i18N:Keys.TouchpadNoiseControlModeDesc}}"
+                    Symbol="ArrowRepeatAll"
+                    IsEnabled="{Binding IsNoiseControlCycleModeEditable}">
+                    <controls:SettingsSymbolItem.Footer>
+                        <WrapPanel HorizontalAlignment="Right">
+                            <CheckBox Margin="8,0,0,0" Content="{ext:Translate {x:Static i18N:Keys.Anc}}" IsChecked="{Binding IsCycleLeftAnc}" />
+                            <CheckBox Margin="8,0,0,0" Content="{ext:Translate {x:Static i18N:Keys.Adaptive}}" IsChecked="{Binding IsCycleLeftAdaptive}" />
+                            <CheckBox Margin="8,0,0,0" Content="{ext:Translate {x:Static i18N:Keys.MainpageAmbientSound}}" IsChecked="{Binding IsCycleLeftAmbient}" />
+                            <CheckBox Margin="8,0,0,0" Content="{ext:Translate {x:Static i18N:Keys.Off}}" IsChecked="{Binding IsCycleLeftOff}" />
+                        </WrapPanel>
+                    </controls:SettingsSymbolItem.Footer>
+                    <Interaction.Behaviors>
+                        <ext:RequiresFeatureBehavior Feature="NoiseControlAdaptive" />
+                    </Interaction.Behaviors>
+                </controls:SettingsSymbolItem>
+
+                <controls:SettingsSymbolItem
+                    Content="{ext:Translate {x:Static i18N:Keys.TouchpadNoiseControlModeR}}"
+                    Description="{ext:Translate {x:Static i18N:Keys.TouchpadNoiseControlModeDesc}}"
+                    Symbol="ArrowRepeatAll"
+                    IsEnabled="{Binding IsNoiseControlCycleModeRightEditable}">
+                    <controls:SettingsSymbolItem.Footer>
+                        <WrapPanel HorizontalAlignment="Right">
+                            <CheckBox Margin="8,0,0,0" Content="{ext:Translate {x:Static i18N:Keys.Anc}}" IsChecked="{Binding IsCycleRightAnc}" />
+                            <CheckBox Margin="8,0,0,0" Content="{ext:Translate {x:Static i18N:Keys.Adaptive}}" IsChecked="{Binding IsCycleRightAdaptive}" />
+                            <CheckBox Margin="8,0,0,0" Content="{ext:Translate {x:Static i18N:Keys.MainpageAmbientSound}}" IsChecked="{Binding IsCycleRightAmbient}" />
+                            <CheckBox Margin="8,0,0,0" Content="{ext:Translate {x:Static i18N:Keys.Off}}" IsChecked="{Binding IsCycleRightOff}" />
+                        </WrapPanel>
+                    </controls:SettingsSymbolItem.Footer>
+                    <Interaction.Behaviors>
+                        <ext:RequiresFeatureBehavior Feature="NoiseControlAdaptive" />
+                    </Interaction.Behaviors>
+                </controls:SettingsSymbolItem>
 
             </controls:SettingsGroup>
 

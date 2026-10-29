@@ -17,6 +17,7 @@ public class Buds4ProDeviceSpec : IDeviceSpec
         { Features.DetectConversations, null },
         { Features.NoiseControl, null },
         { Features.NoiseControlModeDualSide, null },
+        { Features.NoiseControlAdaptive, null },
         { Features.GamingMode, null },
         { Features.CaseBattery, null },
         { Features.FragmentedMessages, null },

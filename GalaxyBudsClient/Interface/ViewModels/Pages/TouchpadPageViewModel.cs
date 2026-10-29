@@ -31,6 +31,7 @@ public partial class TouchpadPageViewModel : MainPageViewModelBase
 
         BluetoothImpl.Instance.Connected += OnConnected;
         Loc.LanguageUpdated += OnLanguageUpdated;
+        InitNoiseCycleChecklist();
         PropertyChanged += OnPropertyChanged;
     }
 
@@ -144,6 +145,7 @@ public partial class TouchpadPageViewModel : MainPageViewModelBase
                     IsDoubleTapVolumeEnabled);
                 break;
             case nameof(NoiseControlCycleMode) or nameof(NoiseControlCycleModeRight):
+                if (IsNoiseCycleChecklistSupported) { await SendNoiseCycleChecklistAsync(); break; }
                 await BluetoothImpl.Instance.SendAsync(new TouchAndHoldNoiseControls
                 {
                     CycleMode = NoiseControlCycleMode,
