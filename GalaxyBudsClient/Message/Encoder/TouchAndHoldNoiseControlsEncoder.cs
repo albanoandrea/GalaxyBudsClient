@@ -28,9 +28,9 @@ public class TouchAndHoldNoiseControls : BaseMessageEncoder
             return mode switch
             {
                 NoiseControlCycleModes.AncOff => [8 + 4],
-                NoiseControlCycleModes.AmbOff => [0 + 4],
-                NoiseControlCycleModes.AncAmb => [8 + 0],
-                _ => [0, 0]
+                NoiseControlCycleModes.AmbOff => [1 + 4],
+                NoiseControlCycleModes.AncAmb => [8 + 1],
+                _ => [0]
             };
             // TODO implement Adaptive mode
         }
