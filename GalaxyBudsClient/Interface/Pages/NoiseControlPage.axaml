@@ -83,6 +83,19 @@
                 </controls:SettingsSliderItem>
             </controls:SettingsGroup>
 
+            <!-- Fork: Adaptive mode (NoiseControlPageViewModel.Adaptive.cs) -->
+            <controls:SettingsGroup>
+                <Interaction.Behaviors>
+                    <ext:RequiresFeatureBehavior Feature="NoiseControlAdaptive" />
+                </Interaction.Behaviors>
+
+                <controls:SettingsSwitchItem
+                    Content="{ext:Translate {x:Static i18N:Keys.Adaptive}}"
+                    Description="{ext:Translate {x:Static i18N:Keys.NcAdaptiveDescription}}"
+                    Symbol="HeadphonesSoundWave"
+                    IsChecked="{Binding IsAdaptiveEnabled}" />
+            </controls:SettingsGroup>
+
             <controls:SettingsGroup>
                 <Interaction.Behaviors>
                     <ext:RequiresFeatureBehavior Feature="NoiseControlsWithOneEarbud" />

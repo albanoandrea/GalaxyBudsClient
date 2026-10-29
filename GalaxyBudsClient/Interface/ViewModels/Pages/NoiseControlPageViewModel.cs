@@ -55,6 +55,7 @@ public partial class NoiseControlPageViewModel : MainPageViewModelBase
         };
         
         InitAncLevelSlider();
+        InitAdaptiveMode();
         PropertyChanged += OnPropertyChanged;
     }
     
