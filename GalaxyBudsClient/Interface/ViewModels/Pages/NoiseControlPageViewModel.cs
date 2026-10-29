@@ -76,6 +76,8 @@ public partial class NoiseControlPageViewModel : MainPageViewModelBase
         IsAncLevelHigh = e.NoiseReductionLevel == 1;
         IsNcWithOneEarbudAllowed = e.NoiseControlsWithOneEarbud;
         IsVoiceDetectEnabled = e.DetectConversations;
+        IsSirenDetectEnabled = e.SirenDetect;
+        IsAutoPauseEnabled = e.AutoPauseResume;
         VoiceDetectTimeout = e.DetectConversationsDuration switch
         {
             1 => VoiceDetectTimeouts.Sec10,
@@ -126,6 +128,12 @@ public partial class NoiseControlPageViewModel : MainPageViewModelBase
                 break;
             case nameof(IsVoiceDetectEnabled):
                 await BluetoothImpl.Instance.SendRequestAsync(MsgIds.SET_DETECT_CONVERSATIONS, IsVoiceDetectEnabled);
+                break;
+            case nameof(IsSirenDetectEnabled):
+                await BluetoothImpl.Instance.SendRequestAsync(MsgIds.UASC_SIREN_DETECT, IsSirenDetectEnabled);
+                break;
+            case nameof(IsAutoPauseEnabled):
+                await BluetoothImpl.Instance.SendRequestAsync(MsgIds.PAUSE_MEDIA_WHEN_ONE_BUD_REMOVED, IsAutoPauseEnabled);
                 break;
             case nameof(VoiceDetectTimeout):
                 var timeout = VoiceDetectTimeout switch
@@ -198,6 +206,8 @@ public partial class NoiseControlPageViewModel : MainPageViewModelBase
     [Reactive] private bool _isAncLevelHigh;
     [Reactive] private bool _isNcWithOneEarbudAllowed;
     [Reactive] private bool _isVoiceDetectEnabled;
+    [Reactive] private bool _isSirenDetectEnabled;
+    [Reactive] private bool _isAutoPauseEnabled;
     [Reactive] private VoiceDetectTimeouts _voiceDetectTimeout;
 
     public override string TitleKey => Keys.MainpageNoise;

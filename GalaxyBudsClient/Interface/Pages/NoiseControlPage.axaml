@@ -107,6 +107,16 @@
                     Symbol="Accessibility"
                     IsChecked="{Binding IsNcWithOneEarbudAllowed}">
                 </controls:SettingsSwitchItem>
+
+                <controls:SettingsSwitchItem
+                    Content="{ext:Translate {x:Static i18N:Keys.NcAutoPause}}"
+                    Description="{ext:Translate {x:Static i18N:Keys.NcAutoPauseDescription}}"
+                    Symbol="PauseCircle"
+                    IsChecked="{Binding IsAutoPauseEnabled}">
+                    <Interaction.Behaviors>
+                        <ext:RequiresFeatureBehavior Feature="AutoPauseResume" />
+                    </Interaction.Behaviors>
+                </controls:SettingsSwitchItem>
             </controls:SettingsGroup>
             
             
@@ -133,6 +143,18 @@
                     </Interaction.Behaviors>
                 </controls:SettingsComboBoxItem>
 
+            </controls:SettingsGroup>
+
+            <controls:SettingsGroup>
+                <controls:SettingsSwitchItem
+                    Content="{ext:Translate {x:Static i18N:Keys.NcSirenDetect}}"
+                    Description="{ext:Translate {x:Static i18N:Keys.NcSirenDetectDescription}}"
+                    Symbol="MegaphoneLoud"
+                    IsChecked="{Binding IsSirenDetectEnabled}">
+                    <Interaction.Behaviors>
+                        <ext:RequiresFeatureBehavior Feature="SirenDetect" />
+                    </Interaction.Behaviors>
+                </controls:SettingsSwitchItem>
             </controls:SettingsGroup>
 
         </StackPanel>

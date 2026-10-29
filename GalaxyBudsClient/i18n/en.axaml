@@ -531,6 +531,12 @@ You might need to manually reconnect your earbuds.</sys:String>
     <!--Noise control-->
     <sys:String x:Key="nc_header">Noise control</sys:String>
     <sys:String x:Key="nc_as_anc_description">Reduce background noises</sys:String>
+    <sys:String x:Key="nc_auto_pause">Auto pause and resume</sys:String>
+    <sys:String x:Key="nc_auto_pause_description">Pause media playback when removing an earbud and resume when worn again</sys:String>
+    <sys:String x:Key="nc_siren_detect">Siren detection</sys:String>
+    <sys:String x:Key="nc_siren_detect_description">Lower the media volume automatically when a siren is detected nearby</sys:String>
+    <sys:String x:Key="eq_adaptive">Adaptive EQ</sys:String>
+    <sys:String x:Key="eq_adaptive_description">Optimize the sound automatically based on the fit of the earbuds</sys:String>
     <sys:String x:Key="nc_one_earbud">Noise controls with one earbud</sys:String>
     <sys:String x:Key="nc_one_earbud_description">Noise controls normally require two earbuds to prevent discomfort, enable this to allow it with only one earbud</sys:String>
     <sys:String x:Key="nc_anc_level">High sensitivity</sys:String>

@@ -53,5 +53,8 @@ public enum Features
     HiddenAtMode,
     CustomEqualizer,
     AncNoiseReductionLevelSlider,
+    SirenDetect,
+    AutoPauseResume,
+    AdaptiveEq,
     TouchpadLock,
 }
