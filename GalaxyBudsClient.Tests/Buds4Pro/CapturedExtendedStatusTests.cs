@@ -9,8 +9,8 @@ namespace GalaxyBudsClient.Tests.Buds4Pro;
 /// Fork: payloads captured from a Buds4 Pro (2026-10-29) after setting the touch-and-hold
 /// noise control modes and "extra clear call sound" in Samsung's app.
 /// </summary>
-[TestFixture, Description("Test ExtendedStatusUpdate parser for the Buds4 Pro"), TestOf(typeof(ExtendedStatusUpdateDecoder))]
-public class ExtendedStatusUpdateTests
+[TestFixture, Description("Fork: ExtendedStatusUpdate payloads captured from a Buds4 Pro"), TestOf(typeof(ExtendedStatusUpdateDecoder))]
+public class CapturedExtendedStatusTests
 {
     // Left: ANC + Off, right: Ambient + Adaptive (byte 21 = 0xC3), extra clear call sound on, worn
     private const string ClearCallOnPayload =
