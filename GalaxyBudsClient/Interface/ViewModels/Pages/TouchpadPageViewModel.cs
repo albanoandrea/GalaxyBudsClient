@@ -9,6 +9,7 @@ using GalaxyBudsClient.Generated.I18N;
 using GalaxyBudsClient.Interface.Dialogs;
 using GalaxyBudsClient.Interface.Pages;
 using GalaxyBudsClient.Message;
+using GalaxyBudsClient.Message.Parameter;
 using GalaxyBudsClient.Message.Decoder;
 using GalaxyBudsClient.Message.Encoder;
 using GalaxyBudsClient.Model;
@@ -27,6 +28,16 @@ public partial class TouchpadPageViewModel : MainPageViewModelBase
     public TouchpadPageViewModel()
     {
         SppMessageReceiver.Instance.ExtendedStatusUpdate += OnExtendedStatusUpdate;
+        SppMessageReceiver.Instance.AcknowledgementResponse += (_, ack) =>
+        {
+            if (ack.Id == MsgIds.LOCK_TOUCHPAD &&
+                ack.Parameters is LockTouchpadAckParameter { Lighting: not null } param)
+            {
+                // Cache the device-reported lighting style so the trailing
+                // "earbuds control" byte can be echoed back unmodified
+                _lightingStyle = param.Lighting.Value;
+            }
+        };
         Settings.TouchActionPropertyChanged += (_, _) => UpdateEditStates();
 
         BluetoothImpl.Instance.Connected += OnConnected;
@@ -54,8 +65,13 @@ public partial class TouchpadPageViewModel : MainPageViewModelBase
 
         LeftAction = e.TouchpadOptionL;
         RightAction = e.TouchpadOptionR;
-        IsTouchpadLocked = e.TouchpadLock;
+        if (BluetoothImpl.Instance.DeviceSpec.Supports(Features.TouchpadLock))
+        {
+            IsTouchpadLocked = e.TouchpadLock;
+        }
         IsDoubleTapVolumeEnabled = e.OutsideDoubleTap;
+        _quickLaunchAdvanced = e.QuickLaunchAdvanced;
+        _gestureEchoBits = e.GestureEchoBits;
 
         if (BluetoothImpl.Instance.DeviceSpec.Supports(Features.AdvancedTouchLock))
         {
@@ -130,7 +146,10 @@ public partial class TouchpadPageViewModel : MainPageViewModelBase
                         TripleTapOn = IsTripleTapGestureEnabled,
                         HoldTapOn = IsHoldGestureEnabled,
                         DoubleTapCallOn = IsDoubleTapGestureForCallsEnabled,
-                        HoldTapCallOn = IsHoldGestureForCallsEnabled
+                        HoldTapCallOn = IsHoldGestureForCallsEnabled,
+                        GestureEchoBits = _gestureEchoBits,
+                        Lighting = _lightingStyle,
+                        QuickLaunchAdvanced = _quickLaunchAdvanced
                     });
                 }
                 else
@@ -256,6 +275,13 @@ public partial class TouchpadPageViewModel : MainPageViewModelBase
 
     [Reactive] private bool _isTouchpadLocked;
     [Reactive] private bool _isDoubleTapVolumeEnabled;
+
+    // Buds4 "earbuds control" trailing bytes; lighting is only reported in
+    // acknowledgement responses, so the last known value is cached here.
+    // 0x01 is the firmware default; sending 0 gets coerced back to 1 anyway.
+    private byte _lightingStyle = 0x01;
+    private byte _quickLaunchAdvanced;
+    private byte _gestureEchoBits;
     [Reactive] private bool _isSingleTapGestureEnabled;
     [Reactive] private bool _isDoubleTapGestureEnabled;
     [Reactive] private bool _isTripleTapGestureEnabled;

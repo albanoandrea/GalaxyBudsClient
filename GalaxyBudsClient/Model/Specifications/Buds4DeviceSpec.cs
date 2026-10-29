@@ -52,8 +52,7 @@ public class Buds4DeviceSpec : IDeviceSpec
     public IEnumerable<TrayItemTypes> TrayShortcuts => Array.AsReadOnly(
         [
             TrayItemTypes.ToggleNoiseControl,
-            TrayItemTypes.ToggleEqualizer,
-            TrayItemTypes.LockTouchpad
+            TrayItemTypes.ToggleEqualizer
         ]
     );
         

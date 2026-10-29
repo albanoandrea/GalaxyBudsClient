@@ -26,6 +26,10 @@
             </Interaction.Behaviors>
             
             <controls:SettingsGroup>
+                <Interaction.Behaviors>
+                    <ext:RequiresFeatureBehavior Feature="TouchpadLock" />
+                </Interaction.Behaviors>
+
                 <controls:SettingsSwitchItem
                     Content="{ext:Translate {x:Static i18N:Keys.TouchpadLock}}"
                     Description="{ext:Translate {x:Static i18N:Keys.TouchpadGesturesDescription}}"
