@@ -645,7 +645,8 @@ public class ExtendedStatusUpdateDecoder : BaseMessageDecoder, IBasicStatusUpdat
                         else // >= Buds3
                         {
                             SpatialAudioHeadTracking = reader.ReadBoolean();
-                            
+                            if (TargetModel == Models.Buds4Pro) _ = reader.ReadByte(); // Fork: extra byte before charging status (verified on Buds4 Pro)
+
                             var chargingStatus = reader.ReadByte();
                             IsLeftCharging = ByteArrayUtils.ValueOfBinaryDigit(chargingStatus, 4) == 16;
                             IsRightCharging = ByteArrayUtils.ValueOfBinaryDigit(chargingStatus, 2) == 4;
