@@ -2,6 +2,7 @@ using System.ComponentModel;
 using GalaxyBudsClient.Message;
 using GalaxyBudsClient.Message.Decoder;
 using GalaxyBudsClient.Message.Parameter;
+using GalaxyBudsClient.Model;
 using GalaxyBudsClient.Model.Constants;
 using GalaxyBudsClient.Model.Specifications;
 using GalaxyBudsClient.Platform;
@@ -67,6 +68,7 @@ public partial class NoiseControlPageViewModel
 
                 await BluetoothImpl.Instance.SendRequestAsync(MsgIds.NOISE_CONTROLS,
                     (byte)(IsAdaptiveEnabled ? NoiseControlModes.Adaptive : NoiseControlModes.Off));
+                EventDispatcher.Instance.Dispatch(Event.UpdateTrayIcon);
                 break;
             case nameof(IsAncEnabled) or nameof(IsAmbientSoundEnabled):
                 // Upstream sends the new mode; only clear the Adaptive switch here

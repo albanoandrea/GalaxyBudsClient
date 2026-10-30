@@ -147,11 +147,13 @@ public partial class NoiseControlPageViewModel : MainPageViewModelBase
         }
     }
 
-    public NoiseControlModes NoiseControlMode => IsAmbientSoundEnabled
-        ? NoiseControlModes.AmbientSound
-        : IsAncEnabled
-            ? NoiseControlModes.NoiseReduction
-            : NoiseControlModes.Off;
+    public NoiseControlModes NoiseControlMode => IsAdaptiveEnabled
+        ? NoiseControlModes.Adaptive
+        : IsAmbientSoundEnabled
+            ? NoiseControlModes.AmbientSound
+            : IsAncEnabled
+                ? NoiseControlModes.NoiseReduction
+                : NoiseControlModes.Off;
     
     private void SetNoiseControlMode(NoiseControlModes mode)
     {
@@ -160,6 +162,10 @@ public partial class NoiseControlPageViewModel : MainPageViewModelBase
             case NoiseControlModes.Off:
                 IsAmbientSoundEnabled = false;
                 IsAncEnabled = false;
+                IsAdaptiveEnabled = false; // Fork: NoiseControlPageViewModel.Adaptive.cs sends Off
+                break;
+            case NoiseControlModes.Adaptive:
+                IsAdaptiveEnabled = true; // Fork: NoiseControlPageViewModel.Adaptive.cs sends Adaptive
                 break;
             case NoiseControlModes.AmbientSound:
                 IsAmbientSoundEnabled = true;
