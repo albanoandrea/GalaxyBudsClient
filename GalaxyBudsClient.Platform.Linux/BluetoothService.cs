@@ -293,7 +293,7 @@ namespace GalaxyBudsClient.Platform.Linux
                 Log.Debug("Linux.BluetoothService: Reconnected. Attempting to auto-connect to profile...");
                 try
                 {
-                    await ConnectAsync(_currentMac, _currentUuid, CancellationToken.None);
+                    if (ForkPlatformConfig.AutoReconnectEnabled) await ConnectAsync(_currentMac, _currentUuid, CancellationToken.None);
                 }
                 catch (BluetoothException ex)
                 {

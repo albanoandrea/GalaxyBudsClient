@@ -107,7 +107,7 @@ namespace GalaxyBudsClient.Platform.Windows.Bluetooth
                 {
                     try
                     {
-                        await ConnectAsync(_currentMac, _currentUuid, CancellationToken.None);
+                        if (ForkPlatformConfig.AutoReconnectEnabled) await ConnectAsync(_currentMac, _currentUuid, CancellationToken.None);
                     }
                     catch (InvalidOperationException ex)
                     {

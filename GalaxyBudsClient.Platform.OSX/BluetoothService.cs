@@ -204,7 +204,7 @@ namespace GalaxyBudsClient.Platform.OSX
                 if (string.Equals(macAddr, _currentMac, StringComparison.CurrentCultureIgnoreCase))
                 {
                     Log.Debug("OSX.BluetoothService: Reconnecting to {MacAddr}", macAddr);
-                    reconnect();
+                    if (ForkPlatformConfig.AutoReconnectEnabled) reconnect();
                 }
             }
 

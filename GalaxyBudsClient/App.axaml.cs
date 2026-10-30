@@ -109,7 +109,7 @@ public class App : Application
 
         if (BluetoothImpl.HasValidDevice)
         {
-            Task.Run(() => BluetoothImpl.Instance.ConnectAsync());
+            if (ForkConfig.ConnectOnStartup) Task.Run(() => BluetoothImpl.Instance.ConnectAsync());
             _ = TrayManager.Instance.RebuildAsync();
         }
         

@@ -102,7 +102,7 @@ namespace GalaxyBudsClient.Platform.WindowsRT
                             if ((bool) deviceInfoUpdate.Properties["System.Devices.Aep.IsConnected"])
                             {
                                 Log.Debug($"WindowsRT.BluetoothService: Target device connected");
-                                await ConnectAsync(x.Address,
+                                if (ForkPlatformConfig.AutoReconnectEnabled) await ConnectAsync(x.Address,
                                     _service?.ServiceId?.AsString() ?? "{00001101-0000-1000-8000-00805F9B34FB}",
                                     CancellationToken.None);
                             }

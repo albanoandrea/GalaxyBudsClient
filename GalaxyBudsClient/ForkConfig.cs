@@ -11,4 +11,11 @@ public static class ForkConfig
 
     /// <summary>Any outbound network service: crash reporting (Sentry), crowdsourced experiments, firmware download server</summary>
     public static readonly bool OnlineServicesEnabled = false;
+
+    /// <summary>
+    /// Open the RFCOMM link to the last device as soon as the app starts.
+    /// Off on desktop so that launching the app doesn't pull the buds away from the phone; connect manually instead.
+    /// Kept on Android, where the phone is the device the buds should stay with.
+    /// </summary>
+    public static readonly bool ConnectOnStartup = System.OperatingSystem.IsAndroid();
 }
