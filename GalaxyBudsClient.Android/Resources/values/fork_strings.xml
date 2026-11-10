@@ -26,4 +26,7 @@
   <string name="fork_battery_percent">%1$d%%</string>
   <string name="fork_battery_unknown">--</string>
   <string name="fork_permission_denied">Bluetooth permission is required to connect to your earbuds.</string>
+  <string name="fork_settings_title">Buds controls settings</string>
+  <string name="fork_settings_auto_connect">Connect automatically when the earbuds attach to the phone</string>
+  <string name="fork_settings_auto_connect_desc">Opens the control connection in the background when the earbuds connect to this phone, so the widget and notification work without opening the app.</string>
 </resources>

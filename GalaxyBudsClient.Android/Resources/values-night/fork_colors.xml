@@ -11,4 +11,7 @@
   <color name="fork_widget_mode">#FF34343A</color>
   <color name="fork_widget_mode_icon">#FFA6A6AC</color>
   <color name="fork_widget_battery">#FF5BC87A</color>
+  <color name="fork_settings_background">#FF1F1F23</color>
+  <color name="fork_settings_text">#FFE4E1E6</color>
+  <color name="fork_settings_text_secondary">#FFB0AEB4</color>
 </resources>

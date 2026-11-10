@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork-only: theme of the native settings activity (light here, dark in values-night). -->
+<resources>
+  <style name="fork_SettingsTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+    <item name="android:windowBackground">@color/fork_settings_background</item>
+  </style>
+</resources>
