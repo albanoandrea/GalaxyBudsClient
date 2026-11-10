@@ -43,6 +43,7 @@ public partial class TouchpadPageViewModel : MainPageViewModelBase
         BluetoothImpl.Instance.Connected += OnConnected;
         Loc.LanguageUpdated += OnLanguageUpdated;
         InitNoiseCycleChecklist();
+        InitMediaControls();
         PropertyChanged += OnPropertyChanged;
     }
 
@@ -147,6 +148,7 @@ public partial class TouchpadPageViewModel : MainPageViewModelBase
                         HoldTapOn = IsHoldGestureEnabled,
                         DoubleTapCallOn = IsDoubleTapGestureForCallsEnabled,
                         HoldTapCallOn = IsHoldGestureForCallsEnabled,
+                        SwipeOn = _isSwipeGestureEnabled,
                         GestureEchoBits = _gestureEchoBits,
                         Lighting = _lightingStyle,
                         QuickLaunchAdvanced = _quickLaunchAdvanced

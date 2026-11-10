@@ -196,9 +196,8 @@ public class ExtendedStatusUpdateDecoder : BaseMessageDecoder, IBasicStatusUpdat
     public byte QuickLaunchAdvanced { get; init; }
 
     /// <summary>
-    /// Buds4 only: the "earbuds control" mask bits for gestures without a
-    /// dedicated property (bits 0 and 6 - e.g. the volume swipe). These
-    /// must be echoed back unmodified when sending touch options.
+    /// Buds4 only: bit 7 of the "earbuds control" mask (meaning unknown).
+    /// It must be echoed back unmodified when sending touch options.
     /// </summary>
     [Device(Models.Buds4, Selector.GreaterEqual)]
     public byte GestureEchoBits { get; init; }
@@ -345,18 +344,19 @@ public class ExtendedStatusUpdateDecoder : BaseMessageDecoder, IBasicStatusUpdat
                 {
                     if (TargetModel is Models.Buds4 or Models.Buds4Pro)
                     {
-                        // Buds4 bit layout (verified experimentally):
-                        // bit7 = single tap, bit3 = double tap, bit2 = triple tap,
-                        // bit1 = pinch and hold, bit4/5 = gestures during calls.
-                        // There is no lock flag. Bits 0 and 6 map to additional
-                        // gestures (e.g. volume swipe) and are only echoed back
-                        // when sending.
+                        // Buds4 uses the legacy bit order (verified on a
+                        // Buds4 Pro by toggling each LOCK_TOUCHPAD byte):
+                        // bit0 = pinch and hold, bit1 = triple, bit2 = double,
+                        // bit3 = single, bit4/5 = gestures during calls,
+                        // bit6 = volume swipe. There is no lock flag; bit7 is
+                        // unknown and only echoed back when sending.
                         TouchpadLock = false;
-                        SingleTapOn = (msg.Payload[10] & (1 << 7)) == 128;
-                        DoubleTapOn = (msg.Payload[10] & (1 << 3)) == 8;
-                        TripleTapOn = (msg.Payload[10] & (1 << 2)) == 4;
-                        TouchHoldOn = (msg.Payload[10] & (1 << 1)) == 2;
-                        GestureEchoBits = (byte)(msg.Payload[10] & 0x41);
+                        TouchHoldOn = (msg.Payload[10] & (1 << 0)) == 1;
+                        TripleTapOn = (msg.Payload[10] & (1 << 1)) == 2;
+                        DoubleTapOn = (msg.Payload[10] & (1 << 2)) == 4;
+                        SingleTapOn = (msg.Payload[10] & (1 << 3)) == 8;
+                        SwipeOn = (msg.Payload[10] & (1 << 6)) == 64;
+                        GestureEchoBits = (byte)(msg.Payload[10] & 0x80);
 
                         if (DeviceSpec.Supports(Features.AdvancedTouchLockForCalls))
                         {

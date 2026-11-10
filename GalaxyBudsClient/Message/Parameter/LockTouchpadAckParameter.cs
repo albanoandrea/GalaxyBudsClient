@@ -33,8 +33,9 @@ public class LockTouchpadAckParameter : MessageAsDictionary, IAckParameter
         {
             // Buds4 echoes the full 12-byte "earbuds control" payload:
             // [0] reserved, [1] single tap, [2] double tap, [3] triple tap,
-            // [4] pinch and hold, [5..8] additional gestures, [9] duplicate
-            // of [6], [10] lighting style, [11] quick launch advanced.
+            // [4] pinch and hold, [5] double tap during call, [6] pinch and
+            // hold during call, [7] volume swipe, [8..9] unknown,
+            // [10] lighting style, [11] quick launch advanced.
             // There is no touchpad lock flag on the Buds4 generation.
             try
             {
@@ -44,11 +45,11 @@ public class LockTouchpadAckParameter : MessageAsDictionary, IAckParameter
                 TripleTapOn = reader.ReadBoolean();
                 TouchAndHoldOn = reader.ReadBoolean();
                 SupportsAdvancedTouchLock = true;
-                reader.ReadBoolean(); // echo bits [5]
-                reader.ReadBoolean(); // echo bits [6]
-                reader.ReadBoolean(); // echo bits [7]
-                reader.ReadBoolean(); // echo bits [8]
-                reader.ReadBoolean(); // duplicate of [6]
+                ForCallDoubleTap = reader.ReadBoolean(); // [5]
+                ForCallTouchAndHold = reader.ReadBoolean(); // [6]
+                reader.ReadBoolean(); // [7] volume swipe
+                reader.ReadBoolean(); // [8] unknown
+                reader.ReadBoolean(); // [9] unknown
                 Lighting = reader.ReadByte();
                 QuickLaunchAdvanced = reader.ReadByte();
             }

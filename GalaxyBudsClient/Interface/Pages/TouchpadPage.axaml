@@ -156,13 +156,24 @@
                     </ext:RequiresAnyFeatureBehavior>
                 </Interaction.Behaviors>
 
+                <!-- Fork: one switch like Samsung's app (TouchpadPageViewModel.MediaControls.cs) -->
+                <controls:SettingsSwitchItem
+                    Content="{ext:Translate {x:Static i18N:Keys.TouchpadMediaControls}}"
+                    Description="{ext:Translate {x:Static i18N:Keys.TouchpadMediaControlsDesc}}"
+                    Symbol="VideoPlayPause"
+                    IsChecked="{Binding IsMediaControlsEnabled}">
+                    <Interaction.Behaviors>
+                        <ext:RequiresFeatureBehavior Feature="MediaControlsSwitch" />
+                    </Interaction.Behaviors>
+                </controls:SettingsSwitchItem>
+
                 <controls:SettingsSwitchItem
                     Content="{ext:Translate {x:Static i18N:Keys.TouchpadGestureSingle}}"
                     Description="{ext:Translate {x:Static i18N:Keys.TouchpadGestureSingleDesc}}"
                     Symbol="VideoPlayPause"
                     IsChecked="{Binding IsSingleTapGestureEnabled}">
                     <Interaction.Behaviors>
-                        <ext:RequiresFeatureBehavior Feature="AdvancedTouchLock" />
+                        <ext:RequiresFeatureWithoutBehavior Feature="AdvancedTouchLock" Without="MediaControlsSwitch" />
                     </Interaction.Behaviors>
                 </controls:SettingsSwitchItem>
 
@@ -172,7 +183,7 @@
                     Symbol="Next"
                     IsChecked="{Binding IsDoubleTapGestureEnabled}">
                     <Interaction.Behaviors>
-                        <ext:RequiresFeatureBehavior Feature="AdvancedTouchLock" />
+                        <ext:RequiresFeatureWithoutBehavior Feature="AdvancedTouchLock" Without="MediaControlsSwitch" />
                     </Interaction.Behaviors>
                 </controls:SettingsSwitchItem>
 
@@ -182,7 +193,7 @@
                     Symbol="Previous"
                     IsChecked="{Binding IsTripleTapGestureEnabled}">
                     <Interaction.Behaviors>
-                        <ext:RequiresFeatureBehavior Feature="AdvancedTouchLock" />
+                        <ext:RequiresFeatureWithoutBehavior Feature="AdvancedTouchLock" Without="MediaControlsSwitch" />
                     </Interaction.Behaviors>
 
                 </controls:SettingsSwitchItem>

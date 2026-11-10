@@ -212,6 +212,8 @@ If the official Samsung Wearable app is active alongside this app, connection is
     <sys:String x:Key="touchpad_gesture_double_for_call_desc">Answer call or end call</sys:String>
     <sys:String x:Key="touchpad_gesture_hold_for_call">Touch and hold during call</sys:String>
     <sys:String x:Key="touchpad_gesture_hold_for_call_desc">Decline call</sys:String>
+    <sys:String x:Key="touchpad_media_controls">Media controls</sys:String>
+    <sys:String x:Key="touchpad_media_controls_desc">Pinch to play or pause, double or triple pinch to skip tracks, swipe up or down for volume</sys:String>
 
     <!--Touchpad page-->
     <sys:String x:Key="touchpad_header">Touchpad</sys:String>

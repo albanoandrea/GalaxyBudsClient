@@ -26,6 +26,7 @@ public class Buds4DeviceSpec : IDeviceSpec
         { Features.DoubleTapVolume, null },
         { Features.AdvancedTouchLock, null },
         { Features.AdvancedTouchLockForCalls, null },
+        { Features.MediaControlsSwitch, null },
         { Features.NoiseControlsWithOneEarbud, null },
         { Features.AmbientCustomize, null },
         { Features.AmbientSidetone, null },
