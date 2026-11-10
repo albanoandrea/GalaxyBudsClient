@@ -18,4 +18,10 @@ public static class ForkConfig
     /// Kept on Android, where the phone is the device the buds should stay with.
     /// </summary>
     public static readonly bool ConnectOnStartup = System.OperatingSystem.IsAndroid();
+
+    /// <summary>
+    /// BluetoothImpl's data consumer sleeps until a frame arrives (then still batches for 50 ms) instead of polling
+    /// every 50 ms forever. Off: upstream polling (see BluetoothImpl.Fork.cs).
+    /// </summary>
+    public static readonly bool EventDrivenDataConsumer = true;
 }

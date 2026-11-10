@@ -10,4 +10,10 @@ public static class ForkPlatformConfig
     /// Off: the buds also talk to the phone, and the PC grabbing the channel kicks the phone off. Connect manually instead.
     /// </summary>
     public static readonly bool AutoReconnectEnabled = false;
+
+    /// <summary>
+    /// Android: use the fork's ForkBluetoothService (blocking reader/writer threads) instead of upstream's BluetoothService,
+    /// which polls the socket every 50 ms plus a 2 s connection check timer and keeps the CPU busy while the link is idle.
+    /// </summary>
+    public static readonly bool BlockingAndroidBackend = true;
 }

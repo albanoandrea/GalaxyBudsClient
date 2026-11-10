@@ -500,6 +500,7 @@ public sealed partial class BluetoothImpl : ReactiveObject, IDisposable
         }
 
         IncomingQueue.Enqueue(frame);
+        SignalIncomingData();
     }
     
     private void DataConsumerLoop()
@@ -509,7 +510,7 @@ public sealed partial class BluetoothImpl : ReactiveObject, IDisposable
             try
             {
                 _loopCancelSource.Token.ThrowIfCancellationRequested();
-                Task.Delay(50).Wait(_loopCancelSource.Token);
+                WaitForIncomingData(_loopCancelSource.Token);
             }
             catch (OperationCanceledException)
             {

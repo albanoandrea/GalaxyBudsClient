@@ -8,7 +8,7 @@ namespace GalaxyBudsClient.Android.Impl;
 public class AndroidPlatformImplCreator(Context context) : IPlatformImplCreator
 {
     public IDesktopServices CreateDesktopServices() => new DesktopServices(context);
-    public IBluetoothService CreateBluetoothService() => new BluetoothService(context);
+    public IBluetoothService CreateBluetoothService() => GalaxyBudsClient.Platform.ForkPlatformConfig.BlockingAndroidBackend ? new GalaxyBudsClient.Android.Fork.ForkBluetoothService(context) : new BluetoothService(context);
     public IHotkeyBroadcast? CreateHotkeyBroadcast() => null;
     public IHotkeyReceiver? CreateHotkeyReceiver() => null;
     public IMediaKeyRemote? CreateMediaKeyRemote() => null;

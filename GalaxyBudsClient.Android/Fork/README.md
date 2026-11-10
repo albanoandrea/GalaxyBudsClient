@@ -1,7 +1,8 @@
 # Fork: Android background connection, widgets and tiles
 
 Fork-only feature. Everything lives in new files (this folder, `Resources/**/fork_*`, `ForkManifestOverlay.xml`),
-so upstream merges never conflict. No upstream file is edited.
+so upstream merges never conflict. The only upstream edit is the one-line backend switch in
+`Impl/AndroidPlatformImplCreator.cs` (see below).
 
 ## Architecture
 
@@ -39,6 +40,17 @@ unnecessary.
 A `ContentProvider` is created at process start, before any activity. It registers activity lifecycle callbacks; once
 `MainActivity` is up it subscribes to `BluetoothImpl.Instance.Connected` and starts the service, so a connection made from
 the UI also survives closing the app and keeps widgets updated.
+
+### Bluetooth backend without polling (`ForkBluetoothService`)
+
+Upstream's Android `Impl/BluetoothService` polls the socket every 50 ms (plus a 2 s check timer), and
+`BluetoothImpl.DataConsumerLoop` also polls every 50 ms: ~18 % of a core and ~160 wake-ups/s while connected and idle.
+With `ForkPlatformConfig.BlockingAndroidBackend` both creators (`AndroidPlatformImplCreator`, one-line switch, and
+`ForkPlatformImplCreator`) use `ForkBluetoothService` instead: per connection one reader thread blocked in `read()`
+and one writer thread blocked on a `BlockingCollection`. End of stream / IOException raises `Disconnected` once (not when
+we closed the socket ourselves); pending writes are dropped on disconnect. `ForkConfig.EventDrivenDataConsumer`
+(`GalaxyBudsClient/Platform/BluetoothImpl.Fork.cs`) makes the consumer wait for data, then batch 50 ms as before.
+After upstream merges: diff upstream `Impl/BluetoothService.cs` for fixes worth porting.
 
 ## Phases
 
