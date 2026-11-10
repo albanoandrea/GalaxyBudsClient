@@ -24,4 +24,11 @@ public static class ForkConfig
     /// every 50 ms forever. Off: upstream polling (see BluetoothImpl.Fork.cs).
     /// </summary>
     public static readonly bool EventDrivenDataConsumer = true;
+
+    /// <summary>
+    /// Runtime state, not a switch: false while no window of the app is on screen. Only Android maintains it
+    /// (ForkStartupProvider); there the foreground service keeps the process, and so the UI's view models, alive in the
+    /// background. Periodic UI refreshes that talk to the buds (HomePageViewModel's 12 s poll) are skipped meanwhile.
+    /// </summary>
+    public static volatile bool IsUiVisible = true;
 }

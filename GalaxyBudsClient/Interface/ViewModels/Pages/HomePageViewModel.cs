@@ -27,7 +27,7 @@ public class HomePageViewModel : MainPageViewModelBase
         _refreshTimer.Interval = new TimeSpan(0, 0, 12);
         _refreshTimer.Tick += async (_, _) =>
         {
-            if (BluetoothImpl.Instance.IsConnected)
+            if (BluetoothImpl.Instance.IsConnected && ForkConfig.IsUiVisible)
                 await BluetoothImpl.Instance.SendRequestAsync(MsgIds.DEBUG_GET_ALL_DATA);
         };
         

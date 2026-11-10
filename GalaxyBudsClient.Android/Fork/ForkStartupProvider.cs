@@ -23,6 +23,8 @@ internal class ForkStartupProvider : ContentProvider
         var appContext = Context?.ApplicationContext;
         if (appContext is global::Android.App.Application app)
         {
+            // No activity yet (the process may have been started by the service); MainActivity's onStart flips it
+            ForkConfig.IsUiVisible = false;
             app.RegisterActivityLifecycleCallbacks(new LifecycleCallbacks(appContext));
             // A new process means no connection: reset widgets left over from a previous process
             // (also rebuilds their PendingIntents for the current permission state). Doesn't touch the core.
@@ -73,9 +75,20 @@ internal class ForkStartupProvider : ContentProvider
 
         public void OnActivityCreated(Activity activity, Bundle? savedInstanceState) { }
 
-        public void OnActivityStarted(Activity activity) { }
+        // Stops the UI's periodic requests to the buds while the app is not on screen (see ForkConfig.IsUiVisible)
+        public void OnActivityStarted(Activity activity)
+        {
+            if (activity is MainActivity)
+                ForkConfig.IsUiVisible = true;
+        }
+
         public void OnActivityPaused(Activity activity) { }
-        public void OnActivityStopped(Activity activity) { }
+
+        public void OnActivityStopped(Activity activity)
+        {
+            if (activity is MainActivity)
+                ForkConfig.IsUiVisible = false;
+        }
         public void OnActivitySaveInstanceState(Activity activity, Bundle outState) { }
         public void OnActivityDestroyed(Activity activity) { }
     }
