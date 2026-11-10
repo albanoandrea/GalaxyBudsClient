@@ -16,6 +16,8 @@ internal static class ForkIntents
     public const string ActionDisconnect = Prefix + "DISCONNECT";
     /// <summary>Keep the service alive for a connection made elsewhere (e.g. the app UI)</summary>
     public const string ActionAttach = Prefix + "ATTACH";
+    /// <summary>The configured buds just attached (ACL link up, <see cref="BudsAttachReceiver"/>): connect after a short delay</summary>
+    public const string ActionAutoConnect = Prefix + "AUTO_CONNECT";
     /// <summary>Set the noise control mode in <see cref="ExtraNoiseMode"/> (a NoiseControlModes value)</summary>
     public const string ActionSetNoiseMode = Prefix + "SET_NOISE_MODE";
     public const string ExtraNoiseMode = "com.andrea.galaxybudsclient.extra.NOISE_MODE";
@@ -52,6 +54,31 @@ internal static class ForkIntents
         Prefs(context).Edit()!.PutBoolean(PrefPermissionsAsked, true)!.Apply();
 
     private const string PrefPermissionsAsked = "permissions_asked";
+    private const string PrefAutoConnectOnAttach = "auto_connect_on_attach";
+    private const string PrefManualDisconnectAt = "manual_disconnect_at";
+
+    /// <summary>
+    /// Open the control channel by itself when the configured buds attach to the phone (<see cref="BudsAttachReceiver"/>).
+    /// Default on. No UI toggle yet: only this accessor.
+    /// </summary>
+    public static bool AutoConnectOnAttach(Context context) =>
+        Prefs(context).GetBoolean(PrefAutoConnectOnAttach, true);
+
+    public static void SetAutoConnectOnAttach(Context context, bool enabled) =>
+        Prefs(context).Edit()!.PutBoolean(PrefAutoConnectOnAttach, enabled)!.Apply();
+
+    /// <summary>The user tapped Disconnect (widget/notification). Wall clock, so it survives process restarts.</summary>
+    public static void MarkManualDisconnect(Context context) =>
+        Prefs(context).Edit()!.PutLong(PrefManualDisconnectAt, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())!.Apply();
+
+    /// <summary>True if the user tapped Disconnect less than <paramref name="window"/> ago.</summary>
+    public static bool IsRecentManualDisconnect(Context context, TimeSpan window)
+    {
+        var at = Prefs(context).GetLong(PrefManualDisconnectAt, 0);
+        var elapsed = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - at;
+        // Negative: the clock was set back; don't let that suppress auto-connect for an unbounded time
+        return at > 0 && elapsed >= 0 && elapsed < (long)window.TotalMilliseconds;
+    }
     private static ISharedPreferences Prefs(Context context) =>
         context.GetSharedPreferences("fork_android", FileCreationMode.Private)!;
 

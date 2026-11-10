@@ -52,6 +52,40 @@ we closed the socket ourselves); pending writes are dropped on disconnect. `Fork
 (`GalaxyBudsClient/Platform/BluetoothImpl.Fork.cs`) makes the consumer wait for data, then batch 50 ms as before.
 After upstream merges: diff upstream `Impl/BluetoothService.cs` for fixes worth porting.
 
+### Auto-connect on attach (`BudsAttachReceiver`)
+
+The buds connect to the phone for audio by themselves; this opens the control channel too, with the app not running.
+
+```
+ ACL_CONNECTED (manifest receiver, any device) ──► BudsAttachReceiver ──(ActionAutoConnect)──► BudsConnectionService
+   setting on? BR/EDR? permissions? MAC == configured?                    foreground at once ("Connecting…"),
+   no manual Disconnect < 15 s ago? core not connected/connecting?         wait 4 s, then bootstrap core / connect (3 retries)
+```
+
+- **Trigger: `BluetoothDevice.ACTION_ACL_CONNECTED` only.** Exempt from the implicit-broadcast limits, protected (can't be
+  spoofed), delivered only with `BLUETOOTH_CONNECT`, and the Bluetooth stack sends it with a temporary FGS-start allowlist,
+  which is what lets the receiver start the foreground service from the background (logged if it still throws
+  `ForegroundServiceStartNotAllowedException`). Not used: A2DP/headset `CONNECTION_STATE_CHANGED`. They'd say "audio is
+  really up", but miss buds used over LE Audio or with media/call audio turned off, and each fires several times per
+  connect for every device (each one can cold-start the process). The early-ACL problem is handled by the delay instead.
+- **Cheap for other devices**: the receiver reads a SharedPreferences flag, the permission state and settings.json
+  (`BudsState.ConfiguredDevice().Mac`, same pick as `DeviceManager`), never the core or Avalonia. Only the service bootstraps
+  the core. A cold process start per ACL connect of any device (car, watch) is the remaining cost; nothing runs afterwards.
+- **Delay**: ACL comes up before the audio profiles, when RFCOMM tends to fail with "read failed". The service enters the
+  foreground immediately, then waits `AttachConnectDelay` (4 s) on a main-thread `Handler` (no wake lock, no polling; the
+  FGS keeps the process) before bootstrapping the core: the App's start-up connect (`ForkConfig.ConnectOnStartup`) runs
+  as soon as the core is up, so delaying the bootstrap delays that attempt too. This path gets 3 retries instead of 2.
+  If the buds' ACL drops again during the delay (`AttachGoneReceiver`, lid opened and closed), it gives up and stops.
+  An explicit Connect/Disconnect during the delay cancels it.
+- **Manual Disconnect sticks**: after Disconnect (widget/notification) the audio link stays up, so normally no new
+  ACL_CONNECTED arrives and nothing reconnects. As a guard against an ACL bounce caused by our own disconnect (e.g. buds
+  with no audio profile connected lose the ACL when RFCOMM closes), `ActionDisconnect` stores a timestamp and
+  ACL_CONNECTED within `ManualDisconnectWindow` (15 s) is ignored. Any later ACL_CONNECTED means the link really went
+  down and up (case, power, range, Bluetooth toggled), and auto-connects again.
+- **Setting**: `ForkIntents.AutoConnectOnAttach` / `SetAutoConnectOnAttach` (pref `auto_connect_on_attach` in
+  `fork_android`, default on). No UI toggle yet: the only fork-owned UI is the widget/notification; a switch in the app's
+  settings page would need an upstream gate plus a bridge from the shared core to Android prefs.
+
 ## Phases
 
 1. **Foundation (done)**: bootstrap, `BudsConnectionService` (foreground, notification with Connect/Disconnect),
@@ -79,6 +113,9 @@ After upstream merges: diff upstream `Impl/BluetoothService.cs` for fixes worth 
 - **Never touch an Avalonia type before setup** (not even `Application.Current`): it caches a `NullDispatcherImpl`,
   giving a white UI and no core events (`Connected`, battery). `ForkAndroidBootstrap` logs the dispatcher it ends up with.
 - The first RFCOMM connect after the buds (re)attach often fails with "read failed"; the core doesn't retry, the service does.
+  The auto-connect-on-attach path also waits 4 s first (ACL_CONNECTED comes before the audio profiles).
+- `BudsAttachReceiver` runs in a fresh process for every device's ACL link: it must never touch the core or Avalonia,
+  and must log to logcat directly (`GbFork`), because Serilog is only set up by the bootstrap.
 - Widget buttons send the action shown on their label (never a toggle), so a stale widget can't do the opposite.
 - RemoteViews size maps: the launcher picks the entry with the **largest area** that fits, so every key needs a real
   width *and* height (a 0 in either makes all areas equal). `Button` gets an elevation shadow; use a `TextView`.
@@ -94,4 +131,23 @@ After upstream merges: diff upstream `Impl/BluetoothService.cs` for fixes worth 
 - Turn buds off / put them in the case: widget switches to "Disconnected" within a few seconds.
 - Connect from the app UI: notification appears, widget updates.
 - Fresh install without permissions: widget tap opens the permission screen first.
-- Check merged manifest: `obj/Debug/net10.0-android36.1/android/AndroidManifest.xml` (no `INTERNET`, service + receiver + provider present).
+- Check merged manifest: `obj/Debug/net10.0-android36.1/android/AndroidManifest.xml` (no `INTERNET`, service + receivers + provider present,
+  `BudsAttachReceiver` exported with an `ACL_CONNECTED` filter).
+
+## Test checklist (auto-connect on attach)
+
+Watch `adb logcat -s GbFork GbClient`. Run with the app swiped away / force-stopped unless noted.
+
+- Buds in case, close lid, wait, take them out: `BudsAttachReceiver: ACL_CONNECTED <MAC> transport=1` → `starting auto-connect`
+  → `BudsConnectionService: auto-connect in 4 s` → `auto-connecting` → notification/widget "Connected". This is the check
+  that the background FGS start is allowed; `cannot start the connection service: ForegroundServiceStartNotAllowedException`
+  means it isn't.
+- Same with the app open (core running, not connected): connects, UI follows.
+- Other device (car, watch, headset) connects: `ignored (not the configured device)`, no notification, no `GbClient` lines.
+- Disconnect from widget/notification while the buds stay in the ears: no reconnect, no `ACL_CONNECTED` for the buds.
+  Then case → out: auto-connects again.
+- Take out and put back within 4 s: `auto-connect cancelled, ACL link went down again`, notification gone.
+- Tap Connect on the widget during the 4 s: connects at once, no `auto-connecting` line afterwards (the delayed attempt is cancelled).
+- First attempt fails ("read failed"): `connection attempt failed, retrying (2 left)` and it connects on a retry.
+- Bluetooth off → on with buds out: auto-connects (counts as a re-attach).
+- Fresh install / permission revoked: `ignored (permissions missing ...)`.

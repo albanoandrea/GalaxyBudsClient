@@ -66,8 +66,9 @@ internal static class BudsState
     /// <summary>
     /// Device configured in the app (the last used one), read from settings.json without loading the core's Settings
     /// (its static constructor must not run before Avalonia is set up). <see cref="Models.NULL"/> if unknown.
+    /// Same pick as DeviceManager: the device matching lastDeviceMac, else the first one.
     /// </summary>
-    public static (Models Model, string? Name) ConfiguredDevice()
+    public static (Models Model, string? Name, string? Mac) ConfiguredDevice()
     {
         var path = PlatformUtils.CombineDataPath("settings.json");
         try
@@ -82,17 +83,18 @@ internal static class BudsState
                 foreach (var p in root.EnumerateObject())
                     keys.Add(p.Name);
                 global::Android.Util.Log.Warn("GbFork", $"BudsState: no devices in {path}; keys: {string.Join(",", keys)}");
-                return (Models.NULL, null);
+                return (Models.NULL, null, null);
             }
 
-            (Models Model, string? Name) result = (Models.NULL, null);
+            (Models Model, string? Name, string? Mac) result = (Models.NULL, null, null);
             foreach (var device in devices.EnumerateArray())
             {
                 if (Property(device, "model") is not { } value ||
                     !Enum.TryParse<Models>(value.ToString(), true, out var parsed) || parsed == Models.NULL)
                     continue;
-                if (result.Model == Models.NULL || Property(device, "macAddress")?.ToString() == lastMac)
-                    result = (parsed, Property(device, "name")?.ToString());
+                var mac = Property(device, "macAddress")?.ToString();
+                if (result.Model == Models.NULL || mac == lastMac)
+                    result = (parsed, Property(device, "name")?.ToString(), mac);
             }
             if (result.Model == Models.NULL)
                 global::Android.Util.Log.Warn("GbFork", $"BudsState: no device model in {path}");
@@ -102,7 +104,7 @@ internal static class BudsState
         {
             // Serilog is not set up yet when this runs, so log to logcat directly
             global::Android.Util.Log.Warn("GbFork", $"BudsState: could not read the configured device from {path}: {ex}");
-            return (Models.NULL, null);
+            return (Models.NULL, null, null);
         }
     }
 

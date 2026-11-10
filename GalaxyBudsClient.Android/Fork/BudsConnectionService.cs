@@ -34,6 +34,11 @@ internal class BudsConnectionService : Service
     private const int MaxConnectRetries = 2;
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
     private static readonly Java.Lang.String RetryToken = new("retry");
+    // Auto-connect on attach: ACL_CONNECTED arrives before the audio profiles are up, when RFCOMM tends to fail with
+    // "read failed". Wait a little before the first attempt (the core's own start-up connect included), retry more.
+    private static readonly TimeSpan AttachConnectDelay = TimeSpan.FromSeconds(4);
+    private const int MaxAutoConnectRetries = 3;
+    private static readonly Java.Lang.String AutoConnectToken = new("auto-connect");
 
     public static bool IsRunning { get; private set; }
 
@@ -43,6 +48,8 @@ internal class BudsConnectionService : Service
     private int _lastStartId;
     private int _retriesLeft;
     private bool _wasConnecting;
+    private bool _autoConnectPending;
+    private AttachGoneReceiver? _attachGoneReceiver;
 
     public override IBinder? OnBind(Intent? intent) => null;
 
@@ -57,11 +64,21 @@ internal class BudsConnectionService : Service
     {
         _lastStartId = startId;
         var action = intent?.Action ?? ForkIntents.ActionAttach;
+        var autoConnect = action == ForkIntents.ActionAutoConnect;
+        // Keeps BudsAttachReceiver from reconnecting right away (see its ManualDisconnectWindow)
+        if (action == ForkIntents.ActionDisconnect)
+            ForkIntents.MarkManualDisconnect(this);
 
         // startForeground must come first (within seconds of startForegroundService), before the slow core bootstrap
-        if (!TryEnterForeground())
+        if (!TryEnterForeground(autoConnect ? BudsState.Current with { IsConnecting = true } : BudsState.Current))
         {
             BailOut();
+            return StartCommandResult.NotSticky;
+        }
+
+        if (autoConnect)
+        {
+            ScheduleAutoConnect();
             return StartCommandResult.NotSticky;
         }
 
@@ -69,10 +86,25 @@ internal class BudsConnectionService : Service
         if (action != ForkIntents.ActionConnect && !ForkAndroidBootstrap.IsInitialized)
         {
             WidgetRenderer.UpdateAll(this);
-            StopService();
+            if (action == ForkIntents.ActionDisconnect)
+                CancelAutoConnect();
+            // Don't stop under a pending auto-connect (e.g. a mode tap on a stale widget during its delay)
+            if (!_autoConnectPending)
+                StopService();
             return StartCommandResult.NotSticky;
         }
 
+        if (!EnsureCore())
+            return StartCommandResult.NotSticky;
+
+        Log.Debug("BudsConnectionService: {Action}", action);
+        HandleAction(action, intent);
+        return StartCommandResult.NotSticky;
+    }
+
+    /// <summary>Bootstraps the core if needed (the App's start-up auto-connect then runs) and follows its state.</summary>
+    private bool EnsureCore()
+    {
         try
         {
             // Also subscribes BudsState before the App's auto-connect starts
@@ -82,23 +114,107 @@ internal class BudsConnectionService : Service
         {
             Log.Error(ex, "BudsConnectionService: core bootstrap failed");
             StopService();
-            return StartCommandResult.NotSticky;
+            return false;
         }
 
         BudsState.Changed -= OnStateChanged;
         BudsState.Changed += OnStateChanged;
         BudsState.EnsureInitialized(this);
         RegisterLinkReceiver();
+        return true;
+    }
 
-        Log.Debug("BudsConnectionService: {Action}", action);
-        HandleAction(action, intent);
-        return StartCommandResult.NotSticky;
+    /// <summary>
+    /// Auto-connect on attach (<see cref="BudsAttachReceiver"/>): already in the foreground, so the delay is safe.
+    /// The core is bootstrapped only after the delay, because its start-up connect (ForkConfig.ConnectOnStartup) runs at once.
+    /// </summary>
+    private void ScheduleAutoConnect()
+    {
+        _autoConnectPending = true;
+        _handler.RemoveCallbacksAndMessages(AutoConnectToken);
+        // A stop scheduled by an earlier, idle command must not end the service during the delay
+        _handler.RemoveCallbacksAndMessages(StopToken);
+        RegisterAttachGoneReceiver();
+        global::Android.Util.Log.Info("GbFork", $"BudsConnectionService: auto-connect in {AttachConnectDelay.TotalSeconds:0} s");
+        _handler.PostAtTime(() =>
+        {
+            CancelAutoConnect();
+            var current = BudsState.Current;
+            if (current.IsConnected || current.IsConnecting)
+            {
+                // e.g. the user tapped Connect meanwhile; that command owns the service's lifetime
+                global::Android.Util.Log.Info("GbFork", "BudsConnectionService: auto-connect skipped, already connected/connecting");
+                return;
+            }
+            if (ForkIntents.IsRecentManualDisconnect(this, BudsAttachReceiver.ManualDisconnectWindow))
+            {
+                global::Android.Util.Log.Info("GbFork", "BudsConnectionService: auto-connect cancelled, user disconnected");
+                StopService();
+                return;
+            }
+            if (!EnsureCore())
+                return;
+            global::Android.Util.Log.Info("GbFork", "BudsConnectionService: auto-connecting");
+            HandleAction(ForkIntents.ActionConnect, null, MaxAutoConnectRetries);
+        }, AutoConnectToken, SystemClock.UptimeMillis() + (long)AttachConnectDelay.TotalMilliseconds);
+    }
+
+    private void CancelAutoConnect()
+    {
+        _autoConnectPending = false;
+        _handler.RemoveCallbacksAndMessages(AutoConnectToken);
+        UnregisterAttachGoneReceiver();
+    }
+
+    // The buds went away again during the delay (lid opened and closed quickly): don't try to connect to nothing.
+    // Lightweight, because the core (and so LinkReceiver) may not be running yet.
+    private void RegisterAttachGoneReceiver()
+    {
+        if (_attachGoneReceiver != null)
+            return;
+        _attachGoneReceiver = new AttachGoneReceiver(this, BudsState.ConfiguredDevice().Mac);
+        ContextCompat.RegisterReceiver(this, _attachGoneReceiver, new IntentFilter(BluetoothDevice.ActionAclDisconnected),
+            ContextCompat.ReceiverExported);
+    }
+
+    private void UnregisterAttachGoneReceiver()
+    {
+        if (_attachGoneReceiver == null)
+            return;
+        UnregisterReceiver(_attachGoneReceiver);
+        _attachGoneReceiver = null;
+    }
+
+    private void OnAttachGone()
+    {
+        if (!_autoConnectPending)
+            return;
+        global::Android.Util.Log.Info("GbFork", "BudsConnectionService: auto-connect cancelled, ACL link went down again");
+        CancelAutoConnect();
+        StopService();
+    }
+
+    private class AttachGoneReceiver(BudsConnectionService service, string? mac) : BroadcastReceiver
+    {
+        public override void OnReceive(Context? context, Intent? intent)
+        {
+            if (intent?.Action != BluetoothDevice.ActionAclDisconnected || mac == null)
+                return;
+            var device = OperatingSystem.IsAndroidVersionAtLeast(33)
+                ? (BluetoothDevice?)intent.GetParcelableExtra(BluetoothDevice.ExtraDevice, Java.Lang.Class.FromType(typeof(BluetoothDevice)))
+#pragma warning disable CA1422
+                : (BluetoothDevice?)intent.GetParcelableExtra(BluetoothDevice.ExtraDevice);
+#pragma warning restore CA1422
+            if (string.Equals(device?.Address, mac, StringComparison.OrdinalIgnoreCase))
+                service.OnAttachGone();
+        }
     }
 
     public override void OnDestroy()
     {
         IsRunning = false;
         _handler.RemoveCallbacksAndMessages(null);
+        UnregisterAttachGoneReceiver();
         BudsState.Changed -= OnStateChanged;
         if (_linkReceiver != null)
         {
@@ -108,7 +224,7 @@ internal class BudsConnectionService : Service
         base.OnDestroy();
     }
 
-    private void HandleAction(string action, Intent? intent)
+    private void HandleAction(string action, Intent? intent, int connectRetries = MaxConnectRetries)
     {
         var state = BudsState.Current;
         if (!state.HasValidDevice)
@@ -121,12 +237,14 @@ internal class BudsConnectionService : Service
         switch (action)
         {
             case ForkIntents.ActionDisconnect:
+                CancelAutoConnect();
                 _retriesLeft = 0;
                 _handler.RemoveCallbacksAndMessages(RetryToken);
                 _ = DisconnectAsync();
                 break;
             case ForkIntents.ActionConnect:
-                _retriesLeft = MaxConnectRetries;
+                CancelAutoConnect(); // an explicit Connect during the auto-connect delay takes over
+                _retriesLeft = connectRetries;
                 _wasConnecting = state.IsConnecting;
                 // On a cold start the App's auto-connect is already running (BudsState shows it as connecting)
                 if (!state.IsConnected && !state.IsConnecting)
@@ -227,6 +345,7 @@ internal class BudsConnectionService : Service
 
     private void StopService()
     {
+        _autoConnectPending = false;
         _handler.RemoveCallbacksAndMessages(null);
         // Only stops if no newer start command is pending; destroying the service also removes its notification
         if (StopSelfResult(_lastStartId))
@@ -235,7 +354,7 @@ internal class BudsConnectionService : Service
 
     #region Notification
 
-    private bool TryEnterForeground()
+    private bool TryEnterForeground(BudsSnapshot state)
     {
         if (_inForeground)
             return true;
@@ -248,7 +367,7 @@ internal class BudsConnectionService : Service
 
         try
         {
-            ServiceCompat.StartForeground(this, NotificationId, BuildNotification(BudsState.Current), TypeConnectedDevice);
+            ServiceCompat.StartForeground(this, NotificationId, BuildNotification(state), TypeConnectedDevice);
             _inForeground = true;
             return true;
         }
