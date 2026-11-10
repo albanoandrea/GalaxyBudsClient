@@ -82,7 +82,7 @@ internal static class ForkAndroidBootstrap
     }
 
     // Diagnostics only, after setup: which dispatcher implementation Avalonia picked (NullDispatcherImpl = broken)
-    private static string UiDispatcherImpl()
+    internal static string UiDispatcherImpl()
     {
         var dispatcher = typeof(Avalonia.Threading.Dispatcher).GetField("s_uiThread", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
         var impl = dispatcher == null ? null

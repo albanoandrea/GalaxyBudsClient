@@ -52,6 +52,25 @@ we closed the socket ourselves); pending writes are dropped on disconnect. `Fork
 (`GalaxyBudsClient/Platform/BluetoothImpl.Fork.cs`) makes the consumer wait for data, then batch 50 ms as before.
 After upstream merges: diff upstream `Impl/BluetoothService.cs` for fixes worth porting.
 
+### UI dispatcher on the main Looper (`ForkDispatcherImpl`)
+
+Avalonia 11.3 on Android drives `Dispatcher.UIThread` through `AndroidThreadingInterface` + `LegacyDispatcherImpl`: every
+dispatcher OS timer is a new `System.Threading.Timer` (`.NET Timer` thread → thread-pool worker → `Handler.Post` → main
+thread, which also keeps the `.NET TP Gate` thread awake), and every `DispatcherTimer` restart queues an `Inactive` job, which
+arms an extra 1 ms "background processing" timer round trip. The compositor's two batch pools (`BatchStreamArrayPool.cs`)
+run a 1 s `DispatcherTimer` for the whole process life, visible or not: ~16 wake-ups/s and ~3 % of a core while idle.
+`ForkDispatcherImpl` (`IDispatcherImplWithExplicitBackgroundProcessing`) runs timers as delayed Looper messages and
+background processing as a plain post: ~1 main-thread wake-up/s left (the pool timers), nothing on the timer/pool threads.
+
+- Registered by `ForkStartupProvider.OnCreate` (main thread, before any activity/service/receiver, so before either start
+  path sets Avalonia up): it only binds `IDispatcherImpl` into `AvaloniaLocator` (a dictionary, no Dispatcher access).
+  `Dispatcher.CreateUIThreadDispatcher` takes a bound `IDispatcherImpl` over the threading interface; nothing in Avalonia
+  binds or resets one.
+- Switch: `ForkDispatcherImpl.Enabled` (false = stock Avalonia). Check: `GbClient` logs `UI dispatcher: ForkDispatcherImpl`
+  (from `ForkAndroidBootstrap` on the service path, from `ForkStartupProvider` on first `MainActivity` resume).
+- Needs `AvaloniaAccessUnstablePrivateApis=true` (`Directory.Build.props`, warning AVA3001): the Avalonia ref assemblies
+  mark `IDispatcherImpl` as not implementable.
+
 ### Auto-connect on attach (`BudsAttachReceiver`)
 
 The buds connect to the phone for audio by themselves; this opens the control channel too, with the app not running.
@@ -83,8 +102,11 @@ The buds connect to the phone for audio by themselves; this opens the control ch
   ACL_CONNECTED within `ManualDisconnectWindow` (15 s) is ignored. Any later ACL_CONNECTED means the link really went
   down and up (case, power, range, Bluetooth toggled), and auto-connects again.
 - **Setting**: `ForkIntents.AutoConnectOnAttach` / `SetAutoConnectOnAttach` (pref `auto_connect_on_attach` in
-  `fork_android`, default on). No UI toggle yet: the only fork-owned UI is the widget/notification; a switch in the app's
-  settings page would need an upstream gate plus a bridge from the shared core to Android prefs.
+  `fork_android`, default on). UI: `ForkSettingsActivity` (native views, no Avalonia, `Resources/layout/fork_settings.xml`),
+  which is also the widget's configuration activity: long-press the widget, then Settings/Reconfigure (Android 12+).
+  `configuration_optional` means adding the widget does not open it. It always answers `RESULT_OK` with the widget id
+  (also on Back) so the launcher never drops the widget, and works without a widget id. Theme `fork_SettingsTheme`
+  follows light/dark (`values` / `values-night`).
 
 ## Phases
 
@@ -112,6 +134,11 @@ The buds connect to the phone for audio by themselves; this opens the control ch
 
 - **Never touch an Avalonia type before setup** (not even `Application.Current`): it caches a `NullDispatcherImpl`,
   giving a white UI and no core events (`Connected`, battery). `ForkAndroidBootstrap` logs the dispatcher it ends up with.
+  Binding into `AvaloniaLocator` is fine (that's how `ForkDispatcherImpl` gets in); creating the Dispatcher is not.
+- **Re-check `ForkDispatcherImpl` on every Avalonia upgrade**: the `IDispatcherImpl*` contract (private API), that
+  `Dispatcher.CreateUIThreadDispatcher` still prefers a bound `IDispatcherImpl`, and whether Avalonia.Android now ships
+  its own Looper-based dispatcher (then set `Enabled = false` and drop the file and the `AvaloniaAccessUnstablePrivateApis` line).
+  If the log shows `LegacyDispatcherImpl`, the Dispatcher was created before the provider ran.
 - The first RFCOMM connect after the buds (re)attach often fails with "read failed"; the core doesn't retry, the service does.
   The auto-connect-on-attach path also waits 4 s first (ACL_CONNECTED comes before the audio profiles).
 - `BudsAttachReceiver` runs in a fresh process for every device's ACL link: it must never touch the core or Avalonia,

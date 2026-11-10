@@ -8,5 +8,11 @@
   -->
   <PropertyGroup>
     <NoDemo>true</NoDemo>
+    <!--
+      Fork/ForkDispatcherImpl.cs implements Avalonia's [PrivateApi] IDispatcherImpl, which the Avalonia ref assemblies
+      mark as not implementable. This compiles against the real Avalonia assemblies instead (warning AVA3001).
+      Re-check ForkDispatcherImpl on every Avalonia upgrade.
+    -->
+    <AvaloniaAccessUnstablePrivateApis>true</AvaloniaAccessUnstablePrivateApis>
   </PropertyGroup>
 </Project>

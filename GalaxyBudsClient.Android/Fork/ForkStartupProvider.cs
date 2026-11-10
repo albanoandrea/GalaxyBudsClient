@@ -20,6 +20,10 @@ internal class ForkStartupProvider : ContentProvider
 {
     public override bool OnCreate()
     {
+        // Before anything can set Avalonia up (MainActivity or ForkAndroidBootstrap): Dispatcher.UIThread is created lazily
+        // and only then picks its backend. Binds into AvaloniaLocator only, doesn't touch the Dispatcher.
+        ForkDispatcherImpl.Register();
+
         var appContext = Context?.ApplicationContext;
         if (appContext is global::Android.App.Application app)
         {
@@ -52,6 +56,7 @@ internal class ForkStartupProvider : ContentProvider
             if (!_linked)
             {
                 _linked = true;
+                Log.Information("ForkStartupProvider: UI dispatcher: {Impl}", ForkAndroidBootstrap.UiDispatcherImpl());
                 BudsState.Changed += OnStateChanged;
             }
             // The process only counts as foreground (allowed to start the service) shortly after onResume
